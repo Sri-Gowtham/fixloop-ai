@@ -1,0 +1,11 @@
+ticket_id,title,description,source,created_at,customer_email,severity,channel,tags
+TK-001,Login broken after latest update,Users on Okta SSO are being logged out every 5 minutes. Started after the v2.4.2 deploy.,zendesk,2026-05-22T09:00:00Z,user1@acmecorp.com,high,email,auth;sso;okta
+TK-002,CSV export times out above 500 rows,The bulk export feature spins indefinitely when trying to download more than 500 rows. Only started after v2.4.1.,zendesk,2026-05-16T11:30:00Z,user2@acmecorp.com,critical,chat,export;timeout;csv
+TK-003,Invoice PDF missing line items,Our 20-line invoice only shows 14 items in the PDF. The last 6 are cut off.,zendesk,2026-05-03T14:00:00Z,user3@acmecorp.com,high,email,billing;pdf;invoice
+TK-004,Push notifications silent on iOS 17.4,After upgrading to iOS 17.4 all push notifications stopped arriving. Badge counter stuck at 0.,zendesk,2026-04-19T08:00:00Z,user4@acmecorp.com,high,chat,mobile;ios;push
+TK-005,Webhook retries flooding our endpoint,Your service is sending 50+ retries for a single event. This is hitting our rate limit.,zendesk,2026-05-04T10:30:00Z,user5@acmecorp.com,high,email,webhook;retry;integration
+TK-006,Charts blank in Safari 17,All dashboard charts are completely blank when viewed in Safari 17. Works fine in Chrome.,zendesk,2026-04-27T09:00:00Z,user6@acmecorp.com,medium,chat,dashboard;safari;charts
+TK-007,Search not finding recently added contacts,I added 50 new contacts via CSV import 3 hours ago and none of them appear in search.,zendesk,2026-05-20T10:00:00Z,user7@acmecorp.com,medium,email,search;indexing
+TK-008,2FA SMS code arrives 10 minutes late,The two-factor authentication code arrives by SMS around 10 minutes late. By then it's expired.,zendesk,2026-05-10T09:00:00Z,user8@acmecorp.com,high,email,auth;2fa;sms
+TK-009,Recurring events missing from calendar sync,My weekly team standup has disappeared from the calendar after syncing with Google Calendar.,zendesk,2026-04-12T09:00:00Z,user9@acmecorp.com,low,email,calendar;sync;recurring
+TK-010,Cannot export quarterly financial report,Our finance team needs the Q2 export but every attempt times out at exactly 503 rows.,zendesk,2026-05-19T08:00:00Z,user10@acmecorp.com,critical,email,export;timeout;finance
