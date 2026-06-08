@@ -78,7 +78,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "FixLoop AI — Product Intelligence Platform" },
-      { name: "description", content: "Turn support tickets into root-cause intelligence, deployment correlations, and verified product fixes." },
+      {
+        name: "description",
+        content:
+          "Turn support tickets into root-cause intelligence, deployment correlations, and verified product fixes.",
+      },
       { name: "author", content: "FixLoop AI" },
       { property: "og:title", content: "FixLoop AI — Product Intelligence Platform" },
       { property: "og:description", content: "From customer pain to verified product fixes." },

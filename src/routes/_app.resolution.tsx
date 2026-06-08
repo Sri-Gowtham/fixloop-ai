@@ -24,19 +24,37 @@ function ResolutionPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <StatPill label="Open" value={resolutions.filter(r => r.status === "open").length} tone="critical" />
-        <StatPill label="In Progress" value={resolutions.filter(r => r.status === "in_progress").length} tone="warning" />
+        <StatPill
+          label="Open"
+          value={resolutions.filter((r) => r.status === "open").length}
+          tone="critical"
+        />
+        <StatPill
+          label="In Progress"
+          value={resolutions.filter((r) => r.status === "in_progress").length}
+          tone="warning"
+        />
         <StatPill label="Resolved (Q2)" value={resolved.length} tone="secondary" />
       </div>
 
       <Panel title="Loop Closures" subtitle="Verified before/after ticket volume per shipped fix">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {resolved.map((r) => (
-            <div key={r.id} className="rounded-lg border border-secondary/30 bg-secondary/5 p-5 relative overflow-hidden">
-              <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--secondary), transparent)" }} />
+            <div
+              key={r.id}
+              className="rounded-lg border border-secondary/30 bg-secondary/5 p-5 relative overflow-hidden"
+            >
+              <div
+                className="absolute inset-x-0 top-0 h-px"
+                style={{
+                  background: "linear-gradient(90deg, transparent, var(--secondary), transparent)",
+                }}
+              />
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[10px] text-mono text-muted-foreground uppercase tracking-wider">{r.clusterId}</div>
+                  <div className="text-[10px] text-mono text-muted-foreground uppercase tracking-wider">
+                    {r.clusterId}
+                  </div>
                   <h3 className="mt-1 text-base font-bold leading-tight">{r.issue}</h3>
                 </div>
                 <div className="h-9 w-9 rounded-full bg-secondary/20 flex items-center justify-center">
@@ -46,21 +64,36 @@ function ResolutionPage() {
 
               <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                 <div className="rounded-md border border-border bg-card p-3 text-center">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Before fix</div>
-                  <div className="mt-1 text-2xl font-bold text-mono text-[color:var(--critical)]">{r.before}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Before fix
+                  </div>
+                  <div className="mt-1 text-2xl font-bold text-mono text-[color:var(--critical)]">
+                    {r.before}
+                  </div>
                   <div className="text-[10px] text-muted-foreground">tickets / mo</div>
                 </div>
                 <ArrowRight className="h-5 w-5 text-secondary" />
                 <div className="rounded-md border border-secondary/40 bg-secondary/10 p-3 text-center">
-                  <div className="text-[10px] uppercase tracking-wider text-secondary">After fix</div>
+                  <div className="text-[10px] uppercase tracking-wider text-secondary">
+                    After fix
+                  </div>
                   <div className="mt-1 text-2xl font-bold text-mono text-secondary">{r.after}</div>
                   <div className="text-[10px] text-muted-foreground">tickets / mo</div>
                 </div>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2"><TrendingDown className="h-4 w-4 text-secondary" /><span className="font-semibold text-mono">{r.expectedReduction}%</span> deflection</div>
-                <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /><span className="font-semibold text-mono text-primary">${(r.costRecovery/1000).toFixed(1)}k</span> / mo</div>
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-secondary" />
+                  <span className="font-semibold text-mono">{r.expectedReduction}%</span> deflection
+                </div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-mono text-primary">
+                    ${(r.costRecovery / 1000).toFixed(1)}k
+                  </span>{" "}
+                  / mo
+                </div>
               </div>
             </div>
           ))}
@@ -89,9 +122,15 @@ function ResolutionPage() {
                   </td>
                   <td className="py-3 pr-3 text-muted-foreground max-w-md">{r.fix}</td>
                   <td className="py-3 pr-3 text-mono text-xs">{r.owner}</td>
-                  <td className="py-3 text-right text-mono text-secondary font-semibold">{r.expectedReduction}%</td>
-                  <td className="py-3 text-right text-mono text-primary font-semibold">${(r.costRecovery/1000).toFixed(1)}k</td>
-                  <td className="py-3 text-right"><StatusBadge status={r.status} /></td>
+                  <td className="py-3 text-right text-mono text-secondary font-semibold">
+                    {r.expectedReduction}%
+                  </td>
+                  <td className="py-3 text-right text-mono text-primary font-semibold">
+                    ${(r.costRecovery / 1000).toFixed(1)}k
+                  </td>
+                  <td className="py-3 text-right">
+                    <StatusBadge status={r.status} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -102,13 +141,27 @@ function ResolutionPage() {
   );
 }
 
-function StatPill({ label, value, tone }: { label: string; value: number; tone: "critical" | "warning" | "secondary" }) {
-  const color = { critical: "var(--critical)", warning: "var(--warning)", secondary: "var(--secondary)" }[tone];
+function StatPill({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "critical" | "warning" | "secondary";
+}) {
+  const color = {
+    critical: "var(--critical)",
+    warning: "var(--warning)",
+    secondary: "var(--secondary)",
+  }[tone];
   return (
     <div className="rounded-lg border border-border bg-card p-5 relative overflow-hidden">
       <div className="absolute inset-y-0 left-0 w-1" style={{ background: color }} />
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-2 text-3xl font-bold text-mono" style={{ color }}>{value}</div>
+      <div className="mt-2 text-3xl font-bold text-mono" style={{ color }}>
+        {value}
+      </div>
     </div>
   );
 }

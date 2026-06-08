@@ -1,7 +1,19 @@
 import { cn } from "@/lib/utils";
 import { type ReactNode } from "react";
 
-export function Panel({ title, subtitle, action, children, className }: { title?: string; subtitle?: string; action?: ReactNode; children: ReactNode; className?: string }) {
+export function Panel({
+  title,
+  subtitle,
+  action,
+  children,
+  className,
+}: {
+  title?: string;
+  subtitle?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <div className={cn("rounded-lg border border-border bg-card overflow-hidden", className)}>
       {(title || action) && (

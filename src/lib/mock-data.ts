@@ -21,7 +21,8 @@ export const clusters: Cluster[] = [
   {
     id: "CL-1042",
     title: "Bulk CSV Export Fails Above 500 Rows",
-    summary: "Server-side timeout in export pipeline above pagination threshold introduced in v2.4.1.",
+    summary:
+      "Server-side timeout in export pipeline above pagination threshold introduced in v2.4.1.",
     ticketCount: 487,
     severity: "critical",
     monthlyCost: 34000,
@@ -67,7 +68,11 @@ export const clusters: Cluster[] = [
     affectedCustomers: 121,
     firstSeen: "2026-04-30",
     trend: [9, 11, 18, 24, 22, 19, 26, 31],
-    examples: ["Invoice missing last 6 items", "Customer billed wrong total", "PDF cut off mid-row"],
+    examples: [
+      "Invoice missing last 6 items",
+      "Customer billed wrong total",
+      "PDF cut off mid-row",
+    ],
     rootCause: "Headless renderer fixed-height container introduced in styling refactor.",
     relatedDeploy: "v2.3.9",
   },
@@ -82,7 +87,11 @@ export const clusters: Cluster[] = [
     affectedCustomers: 287,
     firstSeen: "2026-04-18",
     trend: [22, 41, 38, 49, 56, 60, 71, 64],
-    examples: ["No alerts since iOS update", "App badge stuck at 0", "Push works only when app open"],
+    examples: [
+      "No alerts since iOS update",
+      "App badge stuck at 0",
+      "Push works only when app open",
+    ],
     rootCause: "Token refresh handler bound to deprecated lifecycle event.",
   },
   {
@@ -139,7 +148,11 @@ export const clusters: Cluster[] = [
     affectedCustomers: 178,
     firstSeen: "2026-05-09",
     trend: [12, 18, 24, 30, 28, 34, 41, 38],
-    examples: ["2FA code came 10 min later", "Locked out waiting on SMS", "Code expired before received"],
+    examples: [
+      "2FA code came 10 min later",
+      "Locked out waiting on SMS",
+      "Code expired before received",
+    ],
     rootCause: "Carrier downgraded sender ID to standard throughput tier.",
   },
   {
@@ -153,7 +166,11 @@ export const clusters: Cluster[] = [
     affectedCustomers: 62,
     firstSeen: "2026-04-11",
     trend: [3, 5, 4, 7, 6, 9, 8, 11],
-    examples: ["Weekly meeting missing", "Recurring events disappear", "Google Calendar sync broken"],
+    examples: [
+      "Weekly meeting missing",
+      "Recurring events disappear",
+      "Google Calendar sync broken",
+    ],
     rootCause: "Parser library upgrade changed RRULE handling.",
     relatedDeploy: "v2.3.7",
   },
@@ -169,12 +186,54 @@ export interface DeployEvent {
 }
 
 export const deploys: DeployEvent[] = [
-  { id: "D-001", date: "2026-04-02", version: "v2.3.7", title: "Calendar parser upgrade", notes: "Bumped ical.js to 2.0", risk: "low" },
-  { id: "D-002", date: "2026-04-15", version: "v2.3.9", title: "Invoice PDF redesign", notes: "Refactored line-item table layout", risk: "medium" },
-  { id: "D-003", date: "2026-04-28", version: "v2.4.0", title: "Webhook queue overhaul", notes: "New retry scheduler", risk: "medium" },
-  { id: "D-004", date: "2026-05-11", version: "v2.4.1", title: "Reports performance pass", notes: "Streamed exports, paginated queries", risk: "high" },
-  { id: "D-005", date: "2026-05-20", version: "v2.4.2", title: "Security hardening", notes: "Cookie SameSite=Strict everywhere", risk: "high" },
-  { id: "D-006", date: "2026-06-01", version: "v2.4.3", title: "Mobile push reliability", notes: "APNs token refresh handler fix", risk: "low" },
+  {
+    id: "D-001",
+    date: "2026-04-02",
+    version: "v2.3.7",
+    title: "Calendar parser upgrade",
+    notes: "Bumped ical.js to 2.0",
+    risk: "low",
+  },
+  {
+    id: "D-002",
+    date: "2026-04-15",
+    version: "v2.3.9",
+    title: "Invoice PDF redesign",
+    notes: "Refactored line-item table layout",
+    risk: "medium",
+  },
+  {
+    id: "D-003",
+    date: "2026-04-28",
+    version: "v2.4.0",
+    title: "Webhook queue overhaul",
+    notes: "New retry scheduler",
+    risk: "medium",
+  },
+  {
+    id: "D-004",
+    date: "2026-05-11",
+    version: "v2.4.1",
+    title: "Reports performance pass",
+    notes: "Streamed exports, paginated queries",
+    risk: "high",
+  },
+  {
+    id: "D-005",
+    date: "2026-05-20",
+    version: "v2.4.2",
+    title: "Security hardening",
+    notes: "Cookie SameSite=Strict everywhere",
+    risk: "high",
+  },
+  {
+    id: "D-006",
+    date: "2026-06-01",
+    version: "v2.4.3",
+    title: "Mobile push reliability",
+    notes: "APNs token refresh handler fix",
+    risk: "low",
+  },
 ];
 
 export const productHealthScore = 72;
@@ -224,11 +283,41 @@ export interface Alert {
 }
 
 export const recentAlerts: Alert[] = [
-  { id: "A-1", title: "New cluster crossed 400 tickets", detail: "Bulk CSV Export Fails Above 500 Rows", severity: "critical", time: "12m ago" },
-  { id: "A-2", title: "Correlation found", detail: "Deploy v2.4.2 ↔ SSO Re-Auth Loop (91%)", severity: "high", time: "1h ago" },
-  { id: "A-3", title: "Deflection verified", detail: "Webhook Retries Storm down 78% post-fix", severity: "low", time: "3h ago" },
-  { id: "A-4", title: "Revenue at risk threshold", detail: "Total exceeded $300k for May", severity: "high", time: "6h ago" },
-  { id: "A-5", title: "Spike detected", detail: "2FA Codes Arriving Late +42% in 24h", severity: "medium", time: "9h ago" },
+  {
+    id: "A-1",
+    title: "New cluster crossed 400 tickets",
+    detail: "Bulk CSV Export Fails Above 500 Rows",
+    severity: "critical",
+    time: "12m ago",
+  },
+  {
+    id: "A-2",
+    title: "Correlation found",
+    detail: "Deploy v2.4.2 ↔ SSO Re-Auth Loop (91%)",
+    severity: "high",
+    time: "1h ago",
+  },
+  {
+    id: "A-3",
+    title: "Deflection verified",
+    detail: "Webhook Retries Storm down 78% post-fix",
+    severity: "low",
+    time: "3h ago",
+  },
+  {
+    id: "A-4",
+    title: "Revenue at risk threshold",
+    detail: "Total exceeded $300k for May",
+    severity: "high",
+    time: "6h ago",
+  },
+  {
+    id: "A-5",
+    title: "Spike detected",
+    detail: "2FA Codes Arriving Late +42% in 24h",
+    severity: "medium",
+    time: "9h ago",
+  },
 ];
 
 export interface Resolution {
@@ -310,11 +399,36 @@ export const executiveSummary = {
   deflectionRate: 0.74,
   topIssues: clusters.slice(0, 5),
   priorities: [
-    { rank: 1, cluster: "CL-1042", reason: "Highest revenue impact, enterprise accounts affected", action: "Ship streamed export hotfix this week" },
-    { rank: 2, cluster: "CL-1039", reason: "Authentication friction across Okta accounts", action: "Roll back SameSite change for IdP routes" },
-    { rank: 3, cluster: "CL-1015", reason: "Account lockouts driving churn signals", action: "Provision EU short code; enable WhatsApp fallback" },
-    { rank: 4, cluster: "CL-1031", reason: "Mobile engagement decline", action: "Confirm rollout of v2.4.3 push fix" },
-    { rank: 5, cluster: "CL-1037", reason: "Customer-visible billing errors", action: "Switch invoice renderer to auto-height layout" },
+    {
+      rank: 1,
+      cluster: "CL-1042",
+      reason: "Highest revenue impact, enterprise accounts affected",
+      action: "Ship streamed export hotfix this week",
+    },
+    {
+      rank: 2,
+      cluster: "CL-1039",
+      reason: "Authentication friction across Okta accounts",
+      action: "Roll back SameSite change for IdP routes",
+    },
+    {
+      rank: 3,
+      cluster: "CL-1015",
+      reason: "Account lockouts driving churn signals",
+      action: "Provision EU short code; enable WhatsApp fallback",
+    },
+    {
+      rank: 4,
+      cluster: "CL-1031",
+      reason: "Mobile engagement decline",
+      action: "Confirm rollout of v2.4.3 push fix",
+    },
+    {
+      rank: 5,
+      cluster: "CL-1037",
+      reason: "Customer-visible billing errors",
+      action: "Switch invoice renderer to auto-height layout",
+    },
   ],
 };
 
@@ -367,14 +481,41 @@ export const aiInvestigations: AIInvestigation[] = [
       "No correlation with any third-party provider incident in the same window.",
     ],
     evidence: [
-      { id: "E-1", type: "deploy_correlation", title: "Deploy v2.4.1 — Export Service Rewrite", detail: "Worker memory ceiling lowered from 2GB to 768MB. Stream chunking changed from 250 to 1000 rows.", weight: 0.94 },
-      { id: "E-2", type: "ticket_pattern", title: "487 tickets, single semantic cluster", detail: "Keywords: 'spinning', 'empty CSV', 'timeout', '30s'. 91% sentiment negative.", weight: 0.88 },
-      { id: "E-3", type: "customer_impact", title: "312 customers — 41 enterprise", detail: "Includes 6 of top-10 ARR accounts. Renewal risk flag triggered on 4.", weight: 0.82 },
-      { id: "E-4", type: "similar_ticket", title: "Q4 2025 analogue (CL-0871)", detail: "Same root cause pattern after v2.1.3 stream refactor — resolved by reverting chunk size.", weight: 0.71 },
+      {
+        id: "E-1",
+        type: "deploy_correlation",
+        title: "Deploy v2.4.1 — Export Service Rewrite",
+        detail:
+          "Worker memory ceiling lowered from 2GB to 768MB. Stream chunking changed from 250 to 1000 rows.",
+        weight: 0.94,
+      },
+      {
+        id: "E-2",
+        type: "ticket_pattern",
+        title: "487 tickets, single semantic cluster",
+        detail: "Keywords: 'spinning', 'empty CSV', 'timeout', '30s'. 91% sentiment negative.",
+        weight: 0.88,
+      },
+      {
+        id: "E-3",
+        type: "customer_impact",
+        title: "312 customers — 41 enterprise",
+        detail: "Includes 6 of top-10 ARR accounts. Renewal risk flag triggered on 4.",
+        weight: 0.82,
+      },
+      {
+        id: "E-4",
+        type: "similar_ticket",
+        title: "Q4 2025 analogue (CL-0871)",
+        detail:
+          "Same root cause pattern after v2.1.3 stream refactor — resolved by reverting chunk size.",
+        weight: 0.71,
+      },
     ],
     recommendation: {
       title: "Re-enable streamed worker output and revert chunking",
-      detail: "Restore 1.5GB memory ceiling on export workers, revert to 250-row chunked pagination, and add a regression test for >2k row exports.",
+      detail:
+        "Restore 1.5GB memory ceiling on export workers, revert to 250-row chunked pagination, and add a regression test for >2k row exports.",
       owner: "Platform Squad — N. Alvarez",
       expectedReduction: 91,
       expectedRecovery: 31000,
@@ -397,9 +538,27 @@ export const aiInvestigations: AIInvestigation[] = [
       "Browser instrumentation shows cookie missing on /sso/callback round-trip.",
     ],
     evidence: [
-      { id: "E-1", type: "deploy_correlation", title: "Deploy v2.4.2 — SameSite=Strict", detail: "Hardening pass flipped SameSite to Strict for all auth cookies.", weight: 0.91 },
-      { id: "E-2", type: "ticket_pattern", title: "241 tickets, Okta-only", detail: "'Verifying with Okta' loop, '5 minute logouts', SAML replay errors.", weight: 0.86 },
-      { id: "E-3", type: "customer_impact", title: "184 customers — Okta tenants", detail: "Cross-domain IdP round-trip drops cookie.", weight: 0.78 },
+      {
+        id: "E-1",
+        type: "deploy_correlation",
+        title: "Deploy v2.4.2 — SameSite=Strict",
+        detail: "Hardening pass flipped SameSite to Strict for all auth cookies.",
+        weight: 0.91,
+      },
+      {
+        id: "E-2",
+        type: "ticket_pattern",
+        title: "241 tickets, Okta-only",
+        detail: "'Verifying with Okta' loop, '5 minute logouts', SAML replay errors.",
+        weight: 0.86,
+      },
+      {
+        id: "E-3",
+        type: "customer_impact",
+        title: "184 customers — Okta tenants",
+        detail: "Cross-domain IdP round-trip drops cookie.",
+        weight: 0.78,
+      },
     ],
     recommendation: {
       title: "Scope SameSite=Lax for IdP callback domain",
@@ -456,12 +615,54 @@ export interface TeamMember {
 }
 
 export const teamMembers: TeamMember[] = [
-  { id: "U-1", name: "Nadia Khan", email: "nadia.khan@acmecorp.com", role: "Owner", status: "active", lastActive: "Just now" },
-  { id: "U-2", name: "Marcus Lee", email: "marcus.lee@acmecorp.com", role: "Admin", status: "active", lastActive: "2m ago" },
-  { id: "U-3", name: "Priya Raman", email: "priya.r@acmecorp.com", role: "Analyst", status: "active", lastActive: "18m ago" },
-  { id: "U-4", name: "Jonas Weber", email: "jonas.w@acmecorp.com", role: "Analyst", status: "active", lastActive: "1h ago" },
-  { id: "U-5", name: "Sofia Alvarez", email: "sofia@acmecorp.com", role: "Viewer", status: "active", lastActive: "Yesterday" },
-  { id: "U-6", name: "devon.park@acmecorp.com", email: "devon.park@acmecorp.com", role: "Analyst", status: "invited", lastActive: "Pending" },
+  {
+    id: "U-1",
+    name: "Nadia Khan",
+    email: "nadia.khan@acmecorp.com",
+    role: "Owner",
+    status: "active",
+    lastActive: "Just now",
+  },
+  {
+    id: "U-2",
+    name: "Marcus Lee",
+    email: "marcus.lee@acmecorp.com",
+    role: "Admin",
+    status: "active",
+    lastActive: "2m ago",
+  },
+  {
+    id: "U-3",
+    name: "Priya Raman",
+    email: "priya.r@acmecorp.com",
+    role: "Analyst",
+    status: "active",
+    lastActive: "18m ago",
+  },
+  {
+    id: "U-4",
+    name: "Jonas Weber",
+    email: "jonas.w@acmecorp.com",
+    role: "Analyst",
+    status: "active",
+    lastActive: "1h ago",
+  },
+  {
+    id: "U-5",
+    name: "Sofia Alvarez",
+    email: "sofia@acmecorp.com",
+    role: "Viewer",
+    status: "active",
+    lastActive: "Yesterday",
+  },
+  {
+    id: "U-6",
+    name: "devon.park@acmecorp.com",
+    email: "devon.park@acmecorp.com",
+    role: "Analyst",
+    status: "invited",
+    lastActive: "Pending",
+  },
 ];
 
 export interface Integration {
@@ -475,12 +676,56 @@ export interface Integration {
 }
 
 export const integrations: Integration[] = [
-  { id: "INT-1", name: "Zendesk", category: "Support", description: "Ingest support tickets, macros, satisfaction.", status: "connected", lastSync: "2m ago", records: 12480 },
-  { id: "INT-2", name: "Jira", category: "Issues", description: "Push fix tickets and sync resolution status.", status: "connected", lastSync: "4m ago", records: 318 },
-  { id: "INT-3", name: "Slack", category: "Comms", description: "Post cluster alerts and resolution updates.", status: "connected", lastSync: "1m ago" },
-  { id: "INT-4", name: "GitHub", category: "Source", description: "Correlate deploys, PRs, and rollbacks to clusters.", status: "connected", lastSync: "6m ago", records: 612 },
-  { id: "INT-5", name: "Intercom", category: "Support", description: "Pull conversations and customer fit signals.", status: "disconnected" },
-  { id: "INT-6", name: "PagerDuty", category: "Comms", description: "Escalate critical clusters to on-call.", status: "error", lastSync: "2h ago" },
+  {
+    id: "INT-1",
+    name: "Zendesk",
+    category: "Support",
+    description: "Ingest support tickets, macros, satisfaction.",
+    status: "connected",
+    lastSync: "2m ago",
+    records: 12480,
+  },
+  {
+    id: "INT-2",
+    name: "Jira",
+    category: "Issues",
+    description: "Push fix tickets and sync resolution status.",
+    status: "connected",
+    lastSync: "4m ago",
+    records: 318,
+  },
+  {
+    id: "INT-3",
+    name: "Slack",
+    category: "Comms",
+    description: "Post cluster alerts and resolution updates.",
+    status: "connected",
+    lastSync: "1m ago",
+  },
+  {
+    id: "INT-4",
+    name: "GitHub",
+    category: "Source",
+    description: "Correlate deploys, PRs, and rollbacks to clusters.",
+    status: "connected",
+    lastSync: "6m ago",
+    records: 612,
+  },
+  {
+    id: "INT-5",
+    name: "Intercom",
+    category: "Support",
+    description: "Pull conversations and customer fit signals.",
+    status: "disconnected",
+  },
+  {
+    id: "INT-6",
+    name: "PagerDuty",
+    category: "Comms",
+    description: "Escalate critical clusters to on-call.",
+    status: "error",
+    lastSync: "2h ago",
+  },
 ];
 
 export interface ApiKey {
@@ -492,15 +737,48 @@ export interface ApiKey {
 }
 
 export const apiKeys: ApiKey[] = [
-  { id: "K-1", label: "Production · Backend", prefix: "fxl_live_8a3f", created: "2025-11-02", lastUsed: "2m ago" },
-  { id: "K-2", label: "Staging · CI", prefix: "fxl_test_91dc", created: "2026-01-18", lastUsed: "12h ago" },
-  { id: "K-3", label: "Data Warehouse Sync", prefix: "fxl_live_4b21", created: "2025-12-09", lastUsed: "3d ago" },
+  {
+    id: "K-1",
+    label: "Production · Backend",
+    prefix: "fxl_live_8a3f",
+    created: "2025-11-02",
+    lastUsed: "2m ago",
+  },
+  {
+    id: "K-2",
+    label: "Staging · CI",
+    prefix: "fxl_test_91dc",
+    created: "2026-01-18",
+    lastUsed: "12h ago",
+  },
+  {
+    id: "K-3",
+    label: "Data Warehouse Sync",
+    prefix: "fxl_live_4b21",
+    created: "2025-12-09",
+    lastUsed: "3d ago",
+  },
 ];
 
 export const recentActivity = [
   { id: "AC-1", action: "Approved fix plan", target: "CL-1042 · Bulk CSV Export", time: "8m ago" },
-  { id: "AC-2", action: "Commented on investigation", target: "AI-7728 · SSO Re-Auth Loop", time: "1h ago" },
+  {
+    id: "AC-2",
+    action: "Commented on investigation",
+    target: "AI-7728 · SSO Re-Auth Loop",
+    time: "1h ago",
+  },
   { id: "AC-3", action: "Exported executive report", target: "Q2 2026 Summary", time: "3h ago" },
-  { id: "AC-4", action: "Invited team member", target: "devon.park@acmecorp.com", time: "Yesterday" },
-  { id: "AC-5", action: "Marked cluster resolved", target: "CL-1028 · Webhook Retries", time: "2 days ago" },
+  {
+    id: "AC-4",
+    action: "Invited team member",
+    target: "devon.park@acmecorp.com",
+    time: "Yesterday",
+  },
+  {
+    id: "AC-5",
+    action: "Marked cluster resolved",
+    target: "CL-1028 · Webhook Retries",
+    time: "2 days ago",
+  },
 ];

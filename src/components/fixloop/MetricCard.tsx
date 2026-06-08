@@ -12,7 +12,16 @@ interface Props {
   spark?: number[];
 }
 
-export function MetricCard({ label, value, delta, deltaDir, deltaGood = "up", icon: Icon, accent = "primary", spark }: Props) {
+export function MetricCard({
+  label,
+  value,
+  delta,
+  deltaDir,
+  deltaGood = "up",
+  icon: Icon,
+  accent = "primary",
+  spark,
+}: Props) {
   const accentColor = {
     primary: "var(--primary)",
     secondary: "var(--secondary)",
@@ -24,11 +33,19 @@ export function MetricCard({ label, value, delta, deltaDir, deltaGood = "up", ic
 
   return (
     <div className="group relative overflow-hidden rounded-lg border border-border bg-card p-5 transition-colors hover:border-border/80">
-      <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }} />
+      <div
+        className="absolute inset-x-0 top-0 h-px"
+        style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }}
+      />
       <div className="flex items-start justify-between">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          {label}
+        </div>
         {Icon && (
-          <div className="h-8 w-8 rounded-md flex items-center justify-center border border-border" style={{ background: `color-mix(in oklab, ${accentColor} 12%, transparent)` }}>
+          <div
+            className="h-8 w-8 rounded-md flex items-center justify-center border border-border"
+            style={{ background: `color-mix(in oklab, ${accentColor} 12%, transparent)` }}
+          >
             <Icon className="h-4 w-4" style={{ color: accentColor }} />
           </div>
         )}
@@ -36,8 +53,17 @@ export function MetricCard({ label, value, delta, deltaDir, deltaGood = "up", ic
       <div className="mt-3 flex items-baseline gap-2">
         <div className="text-3xl font-bold tracking-tight text-mono">{value}</div>
         {delta && (
-          <div className={cn("inline-flex items-center gap-0.5 text-xs font-semibold", good ? "text-secondary" : "text-[color:var(--critical)]")}>
-            {deltaDir === "up" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+          <div
+            className={cn(
+              "inline-flex items-center gap-0.5 text-xs font-semibold",
+              good ? "text-secondary" : "text-[color:var(--critical)]",
+            )}
+          >
+            {deltaDir === "up" ? (
+              <ArrowUpRight className="h-3 w-3" />
+            ) : (
+              <ArrowDownRight className="h-3 w-3" />
+            )}
             {delta}
           </div>
         )}
@@ -51,7 +77,8 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
-  const w = 100, h = 28;
+  const w = 100,
+    h = 28;
   const step = w / (data.length - 1);
   const points = data.map((v, i) => `${i * step},${h - ((v - min) / range) * h}`).join(" ");
   const id = `spk-${Math.random().toString(36).slice(2, 8)}`;
