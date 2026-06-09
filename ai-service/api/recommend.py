@@ -1,30 +1,24 @@
 """
 api/recommend.py
 ----------------
-POST /ai/recommend
+POST /ai/recommend                                — Generate AI fix recommendation
+GET  /ai/recommend/{recommendation_id}            — Fetch recommendation by ID
+GET  /ai/recommend/investigation/{investigation_id} — List recommendations for an investigation
 
-Generates an AI fix recommendation from an existing investigation.
-
-Endpoint contract:
-    POST /ai/recommend
-    Content-Type: application/json
-
-    Request:
-        RecommendRequest
-
-    Response 201:
-        RecommendationOut
+Generates actionable engineering recommendations from AI investigations,
+including priority, effort estimate, expected ticket reduction,
+revenue recovery, and Jira-style ticket content.
 """
 
 from __future__ import annotations
 
-structlog_import = True
 import structlog
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from agents.recommend_agent import RecommendAgent
 from models.recommendation import RecommendRequest, RecommendationOut
-from api.deps import get_current_user
+from services.recommendation import _row_to_recommendation_out
+from services.supabase_client import get_supabase
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -40,14 +34,14 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     summary="Generate AI fix recommendation",
     description=(
-        "Uses GPT-4o to synthesise an actionable fix plan from an AI investigation. "
-        "Persists the recommendation to public.fix_recommendations and returns "
-        "the full RecommendationOut including expected deflection and revenue recovery."
+        "Uses GPT-4o / Gemini to synthesise an actionable fix plan from an AI "
+        "investigation. Persists the recommendation to public.fix_recommendations "
+        "and returns the full RecommendationOut including expected deflection, "
+        "revenue recovery, priority, effort estimate, and Jira ticket content."
     ),
     responses={
         201: {"description": "Recommendation created successfully"},
         400: {"description": "Invalid investigation_id or cluster_id"},
-        401: {"description": "Missing or invalid Bearer token"},
         404: {"description": "Investigation or cluster not found"},
         500: {"description": "LLM synthesis error"},
     },
@@ -56,33 +50,38 @@ async def recommend(
     request: RecommendRequest,
     # user: dict = Depends(get_current_user),  # TODO: enable auth
 ) -> RecommendationOut:
-    """
-    Generate and persist a fix recommendation.
-
-    TODO:
-        1. Validate investigation_id and cluster_id exist
-        2. Instantiate RecommendAgent and call agent(request)
-        3. Handle AgentResult — raise 404 / 500 on failure
-        4. Return RecommendationOut (HTTP 201)
-    """
+    """Generate and persist a fix recommendation from an investigation."""
     logger.info(
         "recommend_request",
-        investigation_id=request.investigation_id,
-        cluster_id=request.cluster_id,
-        owner_user_id=str(request.owner_user_id) if request.owner_user_id else None,
+        investigation_id = request.investigation_id,
+        cluster_id       = request.cluster_id,
+        owner_user_id    = str(request.owner_user_id) if request.owner_user_id else None,
+        force_refresh    = request.force_refresh,
     )
 
     agent = RecommendAgent()
 
-    # TODO: agent_result = await agent(request)
-    # if not agent_result:
-    #     raise HTTPException(status_code=500, detail=agent_result.error)
-    # return agent_result.output
+    try:
+        agent_result = await agent(request)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+    except Exception as exc:
+        logger.exception("recommend_unhandled_error", error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Recommendation pipeline error: {exc}",
+        )
 
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="POST /ai/recommend is not yet implemented — LLM synthesis pending.",
-    )
+    if not agent_result.success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=agent_result.error or "Recommendation generation failed.",
+        )
+
+    return agent_result.output  # type: ignore[return-value]
 
 
 # ----------------------------------------------------------------
@@ -98,20 +97,96 @@ async def recommend(
     responses={
         200: {"description": "Recommendation found"},
         404: {"description": "Recommendation not found"},
+        500: {"description": "Database error"},
     },
 )
 async def get_recommendation(
     recommendation_id: str,
     # user: dict = Depends(get_current_user),  # TODO: enable auth
 ) -> RecommendationOut:
-    """
-    TODO:
-        1. Query public.fix_recommendations by recommendation_id
-        2. Return RecommendationOut
-    """
+    """Fetch a single recommendation from the database."""
     logger.info("get_recommendation_request", recommendation_id=recommendation_id)
+    sb = await get_supabase()
 
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="GET /ai/recommend/{id} is not yet implemented.",
+    try:
+        resp = (
+            await sb.table("fix_recommendations")
+            .select("*")
+            .eq("id", recommendation_id)
+            .single()
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("get_recommendation_db_error", error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {exc}",
+        )
+
+    row = resp.data
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recommendation '{recommendation_id}' not found.",
+        )
+
+    return _row_to_recommendation_out(row)
+
+
+# ----------------------------------------------------------------
+# Endpoint: GET /ai/recommend/investigation/{investigation_id}
+# ----------------------------------------------------------------
+
+@router.get(
+    "/recommend/investigation/{investigation_id}",
+    response_model=list[RecommendationOut],
+    status_code=status.HTTP_200_OK,
+    summary="List recommendations for an investigation",
+    description="Return all fix recommendations for a given investigation, newest first.",
+    responses={
+        200: {"description": "Recommendation list returned"},
+        500: {"description": "Database error"},
+    },
+)
+async def list_investigation_recommendations(
+    investigation_id: str,
+    limit: int = Query(10, ge=1, le=50, description="Max recommendations to return"),
+    # user: dict = Depends(get_current_user),  # TODO: enable auth
+) -> list[RecommendationOut]:
+    """Return all recommendations for an investigation, ordered by created_at desc."""
+    logger.info(
+        "list_recommendations_request",
+        investigation_id=investigation_id,
     )
+    sb = await get_supabase()
+
+    try:
+        resp = (
+            await sb.table("fix_recommendations")
+            .select("*")
+            .eq("investigation_id", investigation_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("list_recommendations_db_error", error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {exc}",
+        )
+
+    rows = resp.data or []
+    results: list[RecommendationOut] = []
+
+    for row in rows:
+        try:
+            results.append(_row_to_recommendation_out(row))
+        except Exception as exc:
+            logger.warning(
+                "recommendation_row_parse_failed",
+                recommendation_id=row.get("id"),
+                error=str(exc),
+            )
+
+    return results

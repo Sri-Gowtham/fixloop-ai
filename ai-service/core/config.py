@@ -61,6 +61,15 @@ class Settings(BaseSettings):
     # ---- Investigations ----
     INVESTIGATION_CONFIDENCE_THRESHOLD: float = 0.70
     DEPLOY_CORRELATION_WINDOW_DAYS: int = 7
+    INVESTIGATION_TICKET_SAMPLE_SIZE: int = 30   # ticket samples sent to LLM
+    INVESTIGATION_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini)$")
+    # Revenue: average support cost per ticket per month (used for estimate)
+    REVENUE_COST_PER_TICKET_USD: float = 70.0
+
+    # ---- Recommendations ----
+    RECOMMENDATION_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini)$")
+    RECOMMENDATION_CACHE_DAYS: int = 7   # reuse recent recs for the same investigation
+
 
 
 settings = Settings()  # type: ignore[call-arg]

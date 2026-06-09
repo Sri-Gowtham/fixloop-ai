@@ -5,20 +5,19 @@ Validation agent — measures before/after ticket deflection post-fix.
 
 Responsibilities:
   1. Accept a ValidateRequest payload
-  2. Query post-ship ticket counts for the parent cluster
-  3. Compute deflection percentage and revenue recovered
-  4. Persist ValidationResultIn rows
-  5. Determine if the loop is closed (deflection ≥ expected target)
-  6. Return ValidationSummary
-
-TODO: implement run() once services.validation is complete.
+  2. Call services.validation.run_validation()
+  3. Return a typed AgentResult[ValidationSummary]
 """
 
 from __future__ import annotations
 
+import structlog
+
 from agents.base import AgentResult, BaseAgent
 from models.validation import ValidateRequest, ValidationSummary
-from services import validation
+from services.validation import run_validation
+
+logger = structlog.get_logger(__name__)
 
 
 class ValidateAgent(BaseAgent[ValidateRequest, ValidationSummary]):
@@ -30,10 +29,22 @@ class ValidateAgent(BaseAgent[ValidateRequest, ValidationSummary]):
     name = "validate_agent"
 
     async def run(self, payload: ValidateRequest) -> AgentResult[ValidationSummary]:
-        """
-        TODO:
-            1. Call validation.run_validation(payload) → ValidationSummary
-            2. Wrap in AgentResult with loop_closed and deflection_pct in meta
-            3. Return
-        """
-        raise NotImplementedError("ValidateAgent.run: not yet implemented")
+        logger.info(
+            "validate_agent_run",
+            fix_recommendation_id=payload.fix_recommendation_id,
+            force_revalidate=payload.force_revalidate,
+        )
+
+        result = await run_validation(payload)
+
+        return AgentResult(
+            success = True,
+            output  = result,
+            meta    = {
+                "fix_recommendation_id": result.fix_recommendation_id,
+                "deflection_pct":        result.deflection_pct,
+                "revenue_recovered_usd": result.revenue_recovered_usd,
+                "status":                result.status,
+                "loop_closed":           result.loop_closed,
+            },
+        )

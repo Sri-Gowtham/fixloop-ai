@@ -25,7 +25,7 @@ class ValidateRequest(BaseModel):
     force_revalidate:      bool  = Field(False, description="Re-run validation even if a recent result exists")
 
     model_config = {"json_schema_extra": {"example": {
-        "fix_recommendation_id": "R-2",
+        "fix_recommendation_id": "REC-1042",
         "force_revalidate":      False,
     }}}
 
@@ -65,13 +65,28 @@ class ValidationResultOut(BaseModel):
 class ValidationSummary(BaseModel):
     """
     Aggregate validation outcome for a fix recommendation,
-    combining all measurement rows into a single "loop closed" result.
+    matching the dashboard-ready requirement.
     """
     fix_recommendation_id: str
-    baseline_ticket_count: Optional[int]    = Field(None, description="Earliest measurement")
-    latest_ticket_count:   Optional[int]    = Field(None, description="Most recent measurement")
-    achieved_deflection:   Optional[float]  = Field(None, ge=0, le=100, description="Measured deflection %")
-    total_recovered_usd:   Optional[float]  = Field(None, ge=0)
-    measurement_count:     int              = Field(0, description="Number of validation data points")
-    loop_closed:           bool             = Field(False, description="True when deflection ≥ expected target")
-    measurements:          list             = Field(default_factory=list)
+    
+    # Before
+    before_ticket_count:   int
+    before_customer_count: int
+    before_revenue_risk:   float
+    
+    # After
+    after_ticket_count:    int
+    after_customer_count:  int
+    after_revenue_risk:    float
+    
+    # Metrics
+    deflection_pct:        float
+    revenue_recovered_usd: float
+    
+    # Status
+    status:                str   # 'Success' | 'Partial Success' | 'Failed'
+    
+    # Metadata
+    loop_closed:           bool
+    measurement_count:     int
+    measurements:          list[ValidationResultOut] = Field(default_factory=list)
