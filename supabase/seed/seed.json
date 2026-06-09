@@ -1,0 +1,275 @@
+{
+  "deployments": [
+    {
+      "id": "DEP-25c53aff",
+      "version": "v2.4.1",
+      "title": "Patch release 2.4.1",
+      "risk": "low",
+      "date": "2026-05-10T08:14:34.949604"
+    },
+    {
+      "id": "DEP-3b10b3eb",
+      "version": "v2.4.2",
+      "title": "CSV Exporter update",
+      "risk": "medium",
+      "date": "2026-05-15T08:14:34.949604"
+    },
+    {
+      "id": "DEP-ac9cd335",
+      "version": "v2.5.0",
+      "title": "Major feature drop (API v2)",
+      "risk": "high",
+      "date": "2026-05-22T08:14:34.949604"
+    },
+    {
+      "id": "DEP-5b32efd1",
+      "version": "v2.5.1",
+      "title": "Hotfix for API limits",
+      "risk": "critical",
+      "date": "2026-05-25T08:14:34.949604"
+    },
+    {
+      "id": "DEP-5f54586a",
+      "version": "v2.6.0",
+      "title": "Dashboard Rewrite",
+      "risk": "high",
+      "date": "2026-06-04T08:14:34.949604"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "CL-001",
+      "title": "CSV Export Failure",
+      "severity": "high",
+      "monthly_cost": 45000,
+      "deploy_idx": 1,
+      "status": "open",
+      "ticket_count": 400,
+      "affected_customers": 308
+    },
+    {
+      "id": "CL-002",
+      "title": "Login Session Expiry",
+      "severity": "medium",
+      "monthly_cost": 12000,
+      "deploy_idx": null,
+      "status": "open",
+      "ticket_count": 250,
+      "affected_customers": 173
+    },
+    {
+      "id": "CL-003",
+      "title": "Broken Onboarding Flow",
+      "severity": "critical",
+      "monthly_cost": 85000,
+      "deploy_idx": 2,
+      "status": "open",
+      "ticket_count": 600,
+      "affected_customers": 520
+    },
+    {
+      "id": "CL-004",
+      "title": "Invoice Sync Failure",
+      "severity": "high",
+      "monthly_cost": 60000,
+      "deploy_idx": null,
+      "status": "open",
+      "ticket_count": 500,
+      "affected_customers": 317
+    },
+    {
+      "id": "CL-005",
+      "title": "Mobile App Crashes",
+      "severity": "critical",
+      "monthly_cost": 95000,
+      "deploy_idx": 2,
+      "status": "open",
+      "ticket_count": 750,
+      "affected_customers": 554
+    },
+    {
+      "id": "CL-006",
+      "title": "API Rate Limit Errors",
+      "severity": "medium",
+      "monthly_cost": 22000,
+      "deploy_idx": 3,
+      "status": "open",
+      "ticket_count": 450,
+      "affected_customers": 271
+    },
+    {
+      "id": "CL-007",
+      "title": "Search Index Delays",
+      "severity": "low",
+      "monthly_cost": 5000,
+      "deploy_idx": null,
+      "status": "open",
+      "ticket_count": 200,
+      "affected_customers": 130
+    },
+    {
+      "id": "CL-008",
+      "title": "Dashboard Loading Issues",
+      "severity": "high",
+      "monthly_cost": 55000,
+      "deploy_idx": 4,
+      "status": "open",
+      "ticket_count": 700,
+      "affected_customers": 547
+    },
+    {
+      "id": "CL-009",
+      "title": "Notification Delivery Failure",
+      "severity": "medium",
+      "monthly_cost": 15000,
+      "deploy_idx": null,
+      "status": "open",
+      "ticket_count": 400,
+      "affected_customers": 342
+    },
+    {
+      "id": "CL-010",
+      "title": "Role Permission Bugs",
+      "severity": "critical",
+      "monthly_cost": 72000,
+      "deploy_idx": null,
+      "status": "open",
+      "ticket_count": 750,
+      "affected_customers": 501
+    }
+  ],
+  "investigations": [
+    {
+      "id": "AI-E73E41",
+      "cluster_id": "CL-003",
+      "root_cause": "Issue traced to deployment v2.5.0 causing broken onboarding flow",
+      "confidence": 93.44,
+      "impact_level": "critical",
+      "affected_customers": 520,
+      "revenue_impact_usd": 85000,
+      "deploy_correlation_id": "DEP-ac9cd335",
+      "deploy_correlation_score": 0.9339,
+      "reasoning_steps": [
+        "Analyzed 300+ tickets for semantic similarities.",
+        "Found strong correlation with v2.5.0 release.",
+        "Identified error logs matching customer reports.",
+        "Synthesized root cause from code changes in the correlated release."
+      ],
+      "created_at": "2026-06-07T08:14:35.021932"
+    },
+    {
+      "id": "AI-615872",
+      "cluster_id": "CL-005",
+      "root_cause": "Issue traced to deployment v2.5.0 causing mobile app crashes",
+      "confidence": 89.83,
+      "impact_level": "critical",
+      "affected_customers": 554,
+      "revenue_impact_usd": 95000,
+      "deploy_correlation_id": "DEP-ac9cd335",
+      "deploy_correlation_score": 0.8475,
+      "reasoning_steps": [
+        "Analyzed 300+ tickets for semantic similarities.",
+        "Found strong correlation with v2.5.0 release.",
+        "Identified error logs matching customer reports.",
+        "Synthesized root cause from code changes in the correlated release."
+      ],
+      "created_at": "2026-06-07T08:14:35.021932"
+    },
+    {
+      "id": "AI-58E524",
+      "cluster_id": "CL-008",
+      "root_cause": "Issue traced to deployment v2.6.0 causing dashboard loading issues",
+      "confidence": 92.43,
+      "impact_level": "high",
+      "affected_customers": 547,
+      "revenue_impact_usd": 55000,
+      "deploy_correlation_id": "DEP-5f54586a",
+      "deploy_correlation_score": 0.9214,
+      "reasoning_steps": [
+        "Analyzed 300+ tickets for semantic similarities.",
+        "Found strong correlation with v2.6.0 release.",
+        "Identified error logs matching customer reports.",
+        "Synthesized root cause from code changes in the correlated release."
+      ],
+      "created_at": "2026-06-07T08:14:35.021932"
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "REC-997A6C",
+      "cluster_id": "CL-003",
+      "investigation_id": "AI-E73E41",
+      "title": "Fix for broken onboarding flow",
+      "description": "Refactor the module introduced in the correlated deployment to handle edge cases properly.",
+      "priority": "critical",
+      "engineering_effort": "low",
+      "confidence_score": 86.1,
+      "status": "resolved",
+      "expected_reduction_pct": 75.6,
+      "expected_recovery_usd": 70587.84,
+      "jira_title": "BUG: Broken onboarding flow",
+      "jira_description": "Customer reports indicate Issue traced to deployment v2.5.0 causing broken onboarding flow",
+      "jira_acceptance_criteria": [
+        "Unit tests pass",
+        "Deflection > 80% measured in FixLoop",
+        "No regressions"
+      ],
+      "created_at": "2026-06-08T08:14:35.021932",
+      "actual_reduction_pct": 75.36894108823604,
+      "actual_recovery_usd": 70337.16514395867,
+      "before_ticket_count": 540,
+      "after_ticket_count": 133
+    },
+    {
+      "id": "REC-1F7C10",
+      "cluster_id": "CL-005",
+      "investigation_id": "AI-615872",
+      "title": "Fix for mobile app crashes",
+      "description": "Refactor the module introduced in the correlated deployment to handle edge cases properly.",
+      "priority": "critical",
+      "engineering_effort": "low",
+      "confidence_score": 93.58,
+      "status": "open",
+      "expected_reduction_pct": 81.13,
+      "expected_recovery_usd": 73609.99,
+      "jira_title": "BUG: Mobile app crashes",
+      "jira_description": "Customer reports indicate Issue traced to deployment v2.5.0 causing mobile app crashes",
+      "jira_acceptance_criteria": [
+        "Unit tests pass",
+        "Deflection > 80% measured in FixLoop",
+        "No regressions"
+      ],
+      "created_at": "2026-06-08T08:14:35.021932"
+    },
+    {
+      "id": "REC-0F37D2",
+      "cluster_id": "CL-008",
+      "investigation_id": "AI-58E524",
+      "title": "Fix for dashboard loading issues",
+      "description": "Refactor the module introduced in the correlated deployment to handle edge cases properly.",
+      "priority": "high",
+      "engineering_effort": "medium",
+      "confidence_score": 93.41,
+      "status": "open",
+      "expected_reduction_pct": 73.08,
+      "expected_recovery_usd": 39770.0,
+      "jira_title": "BUG: Dashboard loading issues",
+      "jira_description": "Customer reports indicate Issue traced to deployment v2.6.0 causing dashboard loading issues",
+      "jira_acceptance_criteria": [
+        "Unit tests pass",
+        "Deflection > 80% measured in FixLoop",
+        "No regressions"
+      ],
+      "created_at": "2026-06-08T08:14:35.021932"
+    }
+  ],
+  "validations": [
+    {
+      "fix_recommendation_id": "REC-997A6C",
+      "ticket_count": 133,
+      "deflection_pct": 75.36894108823604,
+      "revenue_recovered_usd": 70337.16514395867,
+      "created_at": "2026-06-09T08:14:35.021932"
+    }
+  ]
+}

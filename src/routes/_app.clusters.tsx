@@ -5,8 +5,9 @@ import { ClusterCard } from "@/components/fixloop/ClusterCard";
 import { Panel } from "@/components/fixloop/Panel";
 import { SeverityBadge } from "@/components/fixloop/SeverityBadge";
 import { FxButton } from "@/components/fixloop/Button";
-import { clusters, type Severity } from "@/lib/mock-data";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { type Severity } from "@/lib/mock-data";
+import { Search, SlidersHorizontal, X, Loader2 } from "lucide-react";
+import { useClusters, type ClusterOut } from "@/hooks/useClusters";
 
 export const Route = createFileRoute("/_app/clusters")({
   head: () => ({ meta: [{ title: "Clusters · FixLoop AI" }] }),
@@ -18,11 +19,15 @@ const SEVS: (Severity | "all")[] = ["all", "critical", "high", "medium", "low"];
 function ClustersPage() {
   const [q, setQ] = useState("");
   const [sev, setSev] = useState<Severity | "all">("all");
-  const [selected, setSelected] = useState(clusters[0]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filtered = clusters.filter(
-    (c) => (sev === "all" || c.severity === sev) && c.title.toLowerCase().includes(q.toLowerCase()),
+  const { data: liveClusters = [], isLoading: isLoadingClusters } = useClusters(1, 50, sev !== "all" ? sev : undefined);
+
+  const filtered = liveClusters.filter(
+    (c) => c.title.toLowerCase().includes(q.toLowerCase()),
   );
+
+  const selected = liveClusters.find(c => c.id === selectedId) || liveClusters[0];
 
   return (
     <div className="p-8 space-y-6">
@@ -60,113 +65,123 @@ function ClustersPage() {
           ))}
         </div>
         <div className="text-xs text-muted-foreground text-mono ml-auto">
-          {filtered.length} of {clusters.length} clusters
+          {filtered.length} of {liveClusters.length} clusters
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map((c) => (
+          {isLoadingClusters ? (
+            <div className="col-span-1 md:col-span-2 flex justify-center py-12">
+              <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p>Loading clusters...</p>
+              </div>
+            </div>
+          ) : filtered.map((c) => (
             <div
               key={c.id}
-              onClick={() => setSelected(c)}
-              className={`cursor-pointer ${selected.id === c.id ? "ring-1 ring-primary rounded-lg" : ""}`}
+              onClick={() => setSelectedId(c.id)}
+              className={`cursor-pointer ${selected?.id === c.id ? "ring-1 ring-primary rounded-lg" : ""}`}
             >
-              <ClusterCard cluster={c} />
+              <ClusterCard cluster={mapCluster(c)} />
             </div>
           ))}
         </div>
 
-        <Panel
-          className="xl:sticky xl:top-20 h-fit"
-          title="Cluster Detail"
-          action={
-            <button className="text-muted-foreground hover:text-foreground">
-              <X className="h-4 w-4" />
-            </button>
-          }
-        >
-          <div className="space-y-4">
-            <div>
-              <div className="text-[10px] text-mono text-muted-foreground uppercase tracking-wider">
-                {selected.id}
-              </div>
-              <h2 className="mt-1 text-lg font-bold leading-tight">{selected.title}</h2>
-              <div className="mt-2 flex items-center gap-2">
-                <SeverityBadge severity={selected.severity} />
-                <span className="text-xs text-muted-foreground">
-                  First seen {selected.firstSeen}
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">{selected.summary}</p>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Stat label="Tickets" value={selected.ticketCount.toString()} />
-              <Stat label="Customers" value={selected.affectedCustomers.toString()} />
-              <Stat
-                label="Monthly cost"
-                value={`$${(selected.monthlyCost / 1000).toFixed(1)}k`}
-                accent
-              />
-              <Stat label="Confidence" value={`${selected.confidence}%`} />
-            </div>
-
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                Root cause hypothesis
-              </div>
-              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-                {selected.rootCause}
-              </div>
-            </div>
-
-            {selected.relatedDeploy && (
+        {selected && (
+          <Panel
+            className="xl:sticky xl:top-20 h-fit"
+            title="Cluster Detail"
+            action={
+              <button onClick={() => setSelectedId(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            }
+          >
+            <div className="space-y-4">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                  Causal deploy
+                <div className="text-[10px] text-mono text-muted-foreground uppercase tracking-wider">
+                  {selected.id}
                 </div>
-                <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm">
-                  <span
-                    className="h-2 w-2 rounded-full bg-secondary"
-                    style={{ boxShadow: "0 0 6px var(--secondary)" }}
-                  />
-                  <span className="text-mono">{selected.relatedDeploy}</span>
-                  <span className="ml-auto text-xs text-secondary font-semibold">
-                    {selected.confidence}% correlation
+                <h2 className="mt-1 text-lg font-bold leading-tight">{selected.title}</h2>
+                <div className="mt-2 flex items-center gap-2">
+                  <SeverityBadge severity={selected.severity as any} />
+                  <span className="text-xs text-muted-foreground">
+                    First seen {new Date(selected.first_seen_at || selected.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
-            )}
+              <p className="text-sm text-muted-foreground">{selected.summary}</p>
 
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                Example tickets
+              <div className="grid grid-cols-2 gap-2">
+                <Stat label="Tickets" value={selected.ticket_count.toString()} />
+                <Stat label="Customers" value={selected.affected_customers.toString()} />
+                <Stat
+                  label="Monthly cost"
+                  value={`$${(selected.monthly_cost_usd / 1000).toFixed(1)}k`}
+                  accent
+                />
+                <Stat label="Confidence" value={selected.confidence ? `${selected.confidence.toFixed(1)}%` : "-"} />
               </div>
-              <ul className="space-y-1.5">
-                {selected.examples.map((e, i) => (
-                  <li
-                    key={i}
-                    className="text-sm rounded-md border border-border bg-surface px-3 py-2 text-muted-foreground"
-                  >
-                    <span className="text-foreground">"</span>
-                    {e}
-                    <span className="text-foreground">"</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
 
-            <div className="flex gap-2 pt-2">
-              <FxButton size="sm" className="flex-1">
-                Propose fix
-              </FxButton>
-              <FxButton size="sm" variant="outline" className="flex-1">
-                Notify owner
-              </FxButton>
+              {selected.root_cause && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Root cause hypothesis
+                  </div>
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                    {selected.root_cause}
+                  </div>
+                </div>
+              )}
+
+              {selected.related_deploy_id && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Causal deploy
+                  </div>
+                  <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                    <span
+                      className="h-2 w-2 rounded-full bg-secondary"
+                      style={{ boxShadow: "0 0 6px var(--secondary)" }}
+                    />
+                    <span className="text-mono">{selected.related_deploy_id}</span>
+                  </div>
+                </div>
+              )}
+
+              {selected.example_titles && selected.example_titles.length > 0 && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Example tickets
+                  </div>
+                  <ul className="space-y-1.5">
+                    {selected.example_titles.map((e, i) => (
+                      <li
+                        key={i}
+                        className="text-sm rounded-md border border-border bg-surface px-3 py-2 text-muted-foreground"
+                      >
+                        <span className="text-foreground">"</span>
+                        {e}
+                        <span className="text-foreground">"</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <FxButton size="sm" className="flex-1">
+                  Propose fix
+                </FxButton>
+                <FxButton size="sm" variant="outline" className="flex-1">
+                  Notify owner
+                </FxButton>
+              </div>
             </div>
-          </div>
-        </Panel>
+          </Panel>
+        )}
       </div>
     </div>
   );
@@ -181,4 +196,18 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
       </div>
     </div>
   );
+}
+
+function mapCluster(c: ClusterOut): any {
+  return {
+    id: c.id,
+    title: c.title,
+    summary: c.summary,
+    severity: c.severity,
+    ticketCount: c.ticket_count,
+    affectedCustomers: c.affected_customers,
+    monthlyCost: c.monthly_cost_usd,
+    confidence: c.confidence,
+    relatedDeploy: c.related_deploy_id,
+  };
 }

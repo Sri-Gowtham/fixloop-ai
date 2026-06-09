@@ -38,6 +38,8 @@ import {
   Legend,
 } from "recharts";
 
+import { useClusters } from "@/hooks/useClusters";
+
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · FixLoop AI" }] }),
   component: DashboardPage,
@@ -58,6 +60,9 @@ const tooltipStyle = {
 } as const;
 
 function DashboardPage() {
+  // Fetch live clusters for the top table
+  const { data: liveClusters = [], isLoading: isLoadingClusters } = useClusters(1, 6);
+
   return (
     <div className="p-8 space-y-8">
       <PageHeader
@@ -280,26 +285,45 @@ function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {clusters.slice(0, 6).map((c) => (
-              <tr key={c.id} className="border-b border-border/50 hover:bg-accent/30">
-                <td className="py-3">
-                  <div className="font-medium">{c.title}</div>
-                  <div className="text-xs text-muted-foreground text-mono">
-                    {c.id}
-                    {c.relatedDeploy ? ` · ${c.relatedDeploy}` : ""}
+            {isLoadingClusters ? (
+              <tr>
+                <td colSpan={6} className="py-4 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    Loading clusters...
                   </div>
                 </td>
-                <td>
-                  <SeverityBadge severity={c.severity} />
-                </td>
-                <td className="text-right text-mono">{c.ticketCount}</td>
-                <td className="text-right text-mono">{c.affectedCustomers}</td>
-                <td className="text-right text-mono text-primary">
-                  ${(c.monthlyCost / 1000).toFixed(1)}k
-                </td>
-                <td className="text-right text-mono">{c.confidence}%</td>
               </tr>
-            ))}
+            ) : liveClusters.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-4 text-center text-muted-foreground">
+                  No clusters found.
+                </td>
+              </tr>
+            ) : (
+              liveClusters.map((c) => (
+                <tr key={c.id} className="border-b border-border/50 hover:bg-accent/30">
+                  <td className="py-3">
+                    <div className="font-medium">{c.title}</div>
+                    <div className="text-xs text-muted-foreground text-mono">
+                      {c.id.split("-")[0]}-{c.id.slice(-4)}
+                      {c.related_deploy_id ? ` · ${c.related_deploy_id}` : ""}
+                    </div>
+                  </td>
+                  <td>
+                    <SeverityBadge severity={c.severity as any} />
+                  </td>
+                  <td className="text-right text-mono">{c.ticket_count}</td>
+                  <td className="text-right text-mono">{c.affected_customers}</td>
+                  <td className="text-right text-mono text-primary">
+                    ${(c.monthly_cost_usd / 1000).toFixed(1)}k
+                  </td>
+                  <td className="text-right text-mono">
+                    {c.confidence ? `${c.confidence.toFixed(1)}%` : "-"}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </Panel>

@@ -1,0 +1,74 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+
+export interface RecommendationOut {
+  id: string;
+  cluster_id: string;
+  investigation_id?: string;
+  title: string;
+  description: string;
+  priority?: string;
+  engineering_effort?: string;
+  confidence_score?: number;
+  expected_reduction_pct?: number;
+  expected_recovery_usd?: number;
+  estimated_eta?: string;
+  jira_title?: string;
+  jira_description?: string;
+  jira_acceptance_criteria?: string[];
+  jira_severity?: string;
+  status: string;
+}
+
+export function useRecommendations(investigationId?: string) {
+  return useQuery({
+    queryKey: ["recommendations", "byInvestigation", investigationId],
+    queryFn: async () => {
+      const { data } = await api.get<RecommendationOut[]>(`/ai/recommend/investigation/${investigationId}`);
+      // The API returns a list. For the Resolution Center, we usually deal with the primary one.
+      return data[0] || null;
+    },
+    enabled: !!investigationId,
+  });
+}
+
+import { supabase } from "@/lib/supabase";
+import { useSupabaseSync } from "./useSupabaseSync";
+
+export function useAllRecommendations() {
+  useSupabaseSync("fix_recommendations", [["recommendations", "all"]]);
+
+  return useQuery({
+    queryKey: ["recommendations", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fix_recommendations")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+      return data as RecommendationOut[];
+    },
+  });
+}
+
+export function useGenerateRecommendationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ investigationId, clusterId }: { investigationId: string; clusterId: string }) => {
+      const { data } = await api.post<RecommendationOut>("/ai/recommend", {
+        investigation_id: investigationId,
+        cluster_id: clusterId,
+        force_refresh: true,
+      });
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["recommendations", "byInvestigation", variables.investigationId] });
+      queryClient.invalidateQueries({ queryKey: ["recommendations", "all"] });
+    },
+  });
+}
