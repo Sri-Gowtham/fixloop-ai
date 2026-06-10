@@ -24,7 +24,9 @@ export function useRecommendations(investigationId?: string) {
   return useQuery({
     queryKey: ["recommendations", "byInvestigation", investigationId],
     queryFn: async () => {
-      const { data } = await api.get<RecommendationOut[]>(`/ai/recommend/investigation/${investigationId}`);
+      const { data } = await api.get<RecommendationOut[]>(
+        `/ai/recommend/investigation/${investigationId}`,
+      );
       // The API returns a list. For the Resolution Center, we usually deal with the primary one.
       return data[0] || null;
     },
@@ -58,7 +60,13 @@ export function useGenerateRecommendationMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ investigationId, clusterId }: { investigationId: string; clusterId: string }) => {
+    mutationFn: async ({
+      investigationId,
+      clusterId,
+    }: {
+      investigationId: string;
+      clusterId: string;
+    }) => {
       const { data } = await api.post<RecommendationOut>("/ai/recommend", {
         investigation_id: investigationId,
         cluster_id: clusterId,
@@ -67,7 +75,9 @@ export function useGenerateRecommendationMutation() {
       return data;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["recommendations", "byInvestigation", variables.investigationId] });
+      queryClient.invalidateQueries({
+        queryKey: ["recommendations", "byInvestigation", variables.investigationId],
+      });
       queryClient.invalidateQueries({ queryKey: ["recommendations", "all"] });
     },
   });

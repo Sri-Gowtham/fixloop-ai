@@ -8,7 +8,7 @@ Pipeline
   ① Cache guard — return recent recommendation if one exists
   ② Load investigation row + evidence + deploy correlation
   ③ Load cluster context (tickets, metadata)
-  ④ Run LLM recommendation chain (OpenAI GPT-4o or Google Gemini)
+  ④ Run LLM recommendation chain (Groq)
        → title, description, priority, engineering_effort,
          expected_reduction_pct, expected_recovery_usd,
          confidence_score, estimated_eta, Jira ticket content
@@ -280,181 +280,7 @@ Produce the fix recommendation JSON.
 """.strip()
 
 
-async def _call_openai_recommender(
-    investigation: dict,
-    cluster:       dict,
-    evidence:      list[dict],
-    deployment:    dict | None,
-) -> RecommenderOutput:
-    """Call OpenAI GPT-4o with the recommendation prompt."""
-    from openai import AsyncOpenAI
-    from tenacity import retry, stop_after_attempt, wait_exponential
-
-    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    prompt = _build_recommender_prompt(investigation, cluster, evidence, deployment)
-
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=30), reraise=True)
-    async def _call() -> str:
-        resp = await client.chat.completions.create(
-            model    = settings.OPENAI_CHAT_MODEL,
-            messages = [
-                {"role": "system", "content": _RECOMMENDER_SYSTEM},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature     = 0.15,
-            response_format = {"type": "json_object"},
-        )
-        return resp.choices[0].message.content or "{}"
-
-    raw = await _call()
-    return _parse_recommender_output(raw, investigation, cluster)
-
-
-async def _call_gemini_recommender(
-    investigation: dict,
-    cluster:       dict,
-    evidence:      list[dict],
-    deployment:    dict | None,
-) -> RecommenderOutput:
-    """Call Google Gemini with the recommendation prompt."""
-    try:
-        import google.generativeai as genai  # type: ignore
-    except ImportError:
-        raise RuntimeError(
-            "google-generativeai is not installed. Run: pip install google-generativeai"
-        )
-
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model  = genai.GenerativeModel(settings.GEMINI_MODEL)
-    prompt = (
-        f"{_RECOMMENDER_SYSTEM}\n\n"
-        f"{_build_recommender_prompt(investigation, cluster, evidence, deployment)}"
-    )
-
-    from tenacity import retry, stop_after_attempt, wait_exponential
-
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=30), reraise=True)
-    async def _call() -> str:
-        resp = await model.generate_content_async(
-            prompt,
-            generation_config={"temperature": 0.15},
-        )
-        return resp.text
-
-    raw = await _call()
-    return _parse_recommender_output(raw, investigation, cluster)
-
-
-def _parse_recommender_output(
-    raw:           str,
-    investigation: dict,
-    cluster:       dict,
-) -> RecommenderOutput:
-    """
-    Parse the LLM JSON response into a RecommenderOutput.
-    Falls back to safe defaults on any parse failure.
-    """
-    # Strip markdown fences
-    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE)
-
-    try:
-        data = json.loads(cleaned)
-    except (json.JSONDecodeError, ValueError):
-        logger.error(
-            "recommender_parse_failed",
-            raw=raw[:500],
-            investigation_id=investigation.get("id"),
-        )
-        return _fallback_recommender_output(investigation, cluster)
-
-    # Coerce & clamp fields
-    valid_priorities = {"critical", "high", "medium", "low"}
-    priority = str(data.get("priority", "medium")).lower().strip()
-    if priority not in valid_priorities:
-        priority = "medium"
-
-    valid_efforts = {"low", "medium", "high", "very_high"}
-    effort = str(data.get("engineering_effort", "medium")).lower().strip()
-    if effort not in valid_efforts:
-        effort = "medium"
-
-    confidence = float(data.get("confidence_score", 70.0))
-    confidence = max(0.0, min(100.0, confidence))
-
-    reduction = float(data.get("expected_reduction_pct", 80.0))
-    reduction = max(0.0, min(100.0, reduction))
-
-    monthly_cost = float(cluster.get("monthly_cost_usd", 0))
-    floor_recovery = monthly_cost * (reduction / 100)
-    recovery = max(
-        float(data.get("expected_recovery_usd", floor_recovery)),
-        floor_recovery,
-    )
-
-    # Acceptance criteria
-    raw_criteria = data.get("jira_acceptance_criteria") or []
-    criteria = [str(c) for c in raw_criteria if c]
-
-    # Jira severity coerce
-    valid_jira_sev = {"blocker", "critical", "major", "minor", "trivial"}
-    jira_sev = str(data.get("jira_severity", "major")).lower().strip()
-    if jira_sev not in valid_jira_sev:
-        jira_sev = "major"
-
-    return RecommenderOutput(
-        title                   = str(data.get("title", "Fix recommendation"))[:256],
-        description             = str(data.get("description", ""))[:4000],
-        priority                = priority,
-        engineering_effort      = effort,
-        confidence_score        = confidence,
-        expected_reduction_pct  = reduction,
-        expected_recovery_usd   = round(recovery, 2),
-        estimated_eta           = str(data.get("estimated_eta", "1 week"))[:100],
-        jira_title              = str(data.get("jira_title", ""))[:256],
-        jira_description        = str(data.get("jira_description", ""))[:4000],
-        jira_acceptance_criteria = criteria,
-        jira_severity           = jira_sev,
-    )
-
-
-def _fallback_recommender_output(
-    investigation: dict,
-    cluster:       dict,
-) -> RecommenderOutput:
-    """Safe fallback when the LLM fails to produce parseable output."""
-    monthly_cost = float(cluster.get("monthly_cost_usd", 0))
-    ticket_count = int(cluster.get("ticket_count", 0))
-    root_cause   = investigation.get("root_cause", "Unknown root cause")
-
-    return RecommenderOutput(
-        title                   = f"Fix: {cluster.get('title', 'Untitled cluster')}",
-        description             = (
-            f"Address the root cause identified in investigation "
-            f"{investigation.get('id', 'N/A')}: {root_cause}. "
-            f"This issue affects {ticket_count} tickets and "
-            f"{cluster.get('affected_customers', 0)} customers."
-        ),
-        priority                = investigation.get("impact_level", "medium"),
-        engineering_effort      = "medium",
-        confidence_score        = 55.0,
-        expected_reduction_pct  = 75.0,
-        expected_recovery_usd   = round(monthly_cost * 0.75, 2),
-        estimated_eta           = "1 week",
-        jira_title              = f"[FixLoop] {cluster.get('title', 'Fix required')}",
-        jira_description        = (
-            f"**Root Cause:** {root_cause}\n\n"
-            f"**Impact:** {ticket_count} tickets, "
-            f"{cluster.get('affected_customers', 0)} customers affected.\n\n"
-            f"**Revenue at Risk:** ${monthly_cost:,.2f}/month"
-        ),
-        jira_acceptance_criteria = [
-            "Root cause is resolved and verified.",
-            "Affected functionality works correctly under load.",
-            "No regression in related features.",
-        ],
-        jira_severity           = "major",
-    )
-
+from services.llm import generate_recommendation
 
 async def _run_recommender(
     investigation: dict,
@@ -462,25 +288,20 @@ async def _run_recommender(
     evidence:      list[dict],
     deployment:    dict | None,
 ) -> RecommenderOutput:
-    """Dispatch to the configured LLM backend."""
-    backend = settings.RECOMMENDATION_LLM_BACKEND
-
+    """Dispatch to the Groq LLM backend."""
     logger.info(
         "recommender_start",
         investigation_id = investigation.get("id"),
-        backend          = backend,
+        backend          = "groq",
         evidence_count   = len(evidence),
     )
 
     try:
-        if backend == "gemini" and settings.GEMINI_API_KEY:
-            output = await _call_gemini_recommender(
-                investigation, cluster, evidence, deployment
-            )
-        else:
-            output = await _call_openai_recommender(
-                investigation, cluster, evidence, deployment
-            )
+        raw = await generate_recommendation(
+            system_prompt=_RECOMMENDER_SYSTEM,
+            user_prompt=_build_recommender_prompt(investigation, cluster, evidence, deployment),
+        )
+        output = _parse_recommender_output(raw, investigation, cluster)
     except Exception as exc:
         logger.error(
             "recommender_failed",
@@ -496,7 +317,6 @@ async def _run_recommender(
         confidence       = output.confidence_score,
     )
     return output
-
 
 # ============================================================
 # ④ Persist to Supabase
@@ -517,18 +337,25 @@ async def _persist_recommendation(
     now    = datetime.now(timezone.utc).isoformat()
 
     row = {
-        "id":                      rec_id,
-        "cluster_id":              cluster["id"],
-        "investigation_id":        investigation.get("id"),
-        "title":                   output.title,
-        "description":             output.description,
-        "owner_user_id":           owner_user_id,
-        "status":                  "open",
-        "expected_reduction_pct":  round(output.expected_reduction_pct, 2),
-        "expected_recovery_usd":   round(output.expected_recovery_usd, 2),
-        "before_ticket_count":     investigation.get("sim_before_ticket_count"),
-        "after_ticket_count":      investigation.get("sim_after_ticket_count"),
-        "estimated_eta":           output.estimated_eta,
+        "id":                         rec_id,
+        "cluster_id":                 cluster["id"],
+        "investigation_id":           investigation.get("id"),
+        "title":                      output.title,
+        "description":                output.description,
+        "priority":                   output.priority,
+        "engineering_effort":         output.engineering_effort,
+        "confidence_score":           round(output.confidence_score, 2),
+        "owner_user_id":              owner_user_id,
+        "status":                     "open",
+        "expected_reduction_pct":     round(output.expected_reduction_pct, 2),
+        "expected_recovery_usd":      round(output.expected_recovery_usd, 2),
+        "before_ticket_count":        investigation.get("sim_before_ticket_count"),
+        "after_ticket_count":         investigation.get("sim_after_ticket_count"),
+        "estimated_eta":              output.estimated_eta,
+        "jira_title":                 output.jira_title or None,
+        "jira_description":           output.jira_description or None,
+        "jira_acceptance_criteria":   output.jira_acceptance_criteria or None,
+        "jira_severity":              output.jira_severity or None,
     }
 
     try:

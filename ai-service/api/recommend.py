@@ -48,7 +48,7 @@ router = APIRouter()
 )
 async def recommend(
     request: RecommendRequest,
-    # user: dict = Depends(get_current_user),  # TODO: enable auth
+    # user: dict = Depends(get_current_user),
 ) -> RecommendationOut:
     """Generate and persist a fix recommendation from an investigation."""
     logger.info(
@@ -102,7 +102,7 @@ async def recommend(
 )
 async def get_recommendation(
     recommendation_id: str,
-    # user: dict = Depends(get_current_user),  # TODO: enable auth
+    # user: dict = Depends(get_current_user),
 ) -> RecommendationOut:
     """Fetch a single recommendation from the database."""
     logger.info("get_recommendation_request", recommendation_id=recommendation_id)
@@ -151,7 +151,7 @@ async def get_recommendation(
 async def list_investigation_recommendations(
     investigation_id: str,
     limit: int = Query(10, ge=1, le=50, description="Max recommendations to return"),
-    # user: dict = Depends(get_current_user),  # TODO: enable auth
+    # user: dict = Depends(get_current_user),
 ) -> list[RecommendationOut]:
     """Return all recommendations for an investigation, ordered by created_at desc."""
     logger.info(

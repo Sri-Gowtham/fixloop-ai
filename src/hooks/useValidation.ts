@@ -32,7 +32,13 @@ export function useRunValidationMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ recommendationId, forceRevalidate = false }: { recommendationId: string; forceRevalidate?: boolean }) => {
+    mutationFn: async ({
+      recommendationId,
+      forceRevalidate = false,
+    }: {
+      recommendationId: string;
+      forceRevalidate?: boolean;
+    }) => {
       const { data } = await api.post<ValidationSummary>("/ai/validate", {
         fix_recommendation_id: recommendationId,
         force_revalidate: forceRevalidate,
@@ -40,7 +46,9 @@ export function useRunValidationMutation() {
       return data;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["validation", "detail", variables.recommendationId] });
+      queryClient.invalidateQueries({
+        queryKey: ["validation", "detail", variables.recommendationId],
+      });
       queryClient.setQueryData(["validation", "detail", variables.recommendationId], data);
     },
   });

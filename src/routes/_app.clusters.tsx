@@ -21,13 +21,51 @@ function ClustersPage() {
   const [sev, setSev] = useState<Severity | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data: liveClusters = [], isLoading: isLoadingClusters } = useClusters(1, 50, sev !== "all" ? sev : undefined);
-
-  const filtered = liveClusters.filter(
-    (c) => c.title.toLowerCase().includes(q.toLowerCase()),
+  const {
+    data: liveClusters = [],
+    isLoading: isLoadingClusters,
+    isError: isClustersError,
+  } = useClusters(
+    1,
+    50,
+    sev !== "all" ? sev : undefined,
   );
 
-  const selected = liveClusters.find(c => c.id === selectedId) || liveClusters[0];
+  const filtered = liveClusters.filter((c) => c.title.toLowerCase().includes(q.toLowerCase()));
+
+  const selected = liveClusters.find((c) => c.id === selectedId) || liveClusters[0];
+
+  if (isClustersError) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
+        <div className="text-4xl">⚠️</div>
+        <h2 className="text-lg font-bold text-critical">Cannot load clusters</h2>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          The AI service at <code className="text-mono text-primary">{import.meta.env.VITE_API_URL || "http://localhost:8000"}</code> is not responding.
+          Start the FastAPI backend (<code className="text-mono">uvicorn main:app --reload --port 8000</code>) and reload.
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoadingClusters) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p>Loading clusters...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!liveClusters || liveClusters.length === 0) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] text-center text-muted-foreground">
+        No clusters found.
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-6">
@@ -71,22 +109,15 @@ function ClustersPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {isLoadingClusters ? (
-            <div className="col-span-1 md:col-span-2 flex justify-center py-12">
-              <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p>Loading clusters...</p>
+          {filtered.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => setSelectedId(c.id)}
+                className={`cursor-pointer ${selected?.id === c.id ? "ring-1 ring-primary rounded-lg" : ""}`}
+              >
+                <ClusterCard cluster={mapCluster(c)} />
               </div>
-            </div>
-          ) : filtered.map((c) => (
-            <div
-              key={c.id}
-              onClick={() => setSelectedId(c.id)}
-              className={`cursor-pointer ${selected?.id === c.id ? "ring-1 ring-primary rounded-lg" : ""}`}
-            >
-              <ClusterCard cluster={mapCluster(c)} />
-            </div>
-          ))}
+            ))}
         </div>
 
         {selected && (
@@ -94,7 +125,10 @@ function ClustersPage() {
             className="xl:sticky xl:top-20 h-fit"
             title="Cluster Detail"
             action={
-              <button onClick={() => setSelectedId(null)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setSelectedId(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             }
@@ -108,7 +142,8 @@ function ClustersPage() {
                 <div className="mt-2 flex items-center gap-2">
                   <SeverityBadge severity={selected.severity as any} />
                   <span className="text-xs text-muted-foreground">
-                    First seen {new Date(selected.first_seen_at || selected.created_at).toLocaleDateString()}
+                    First seen{" "}
+                    {new Date(selected.first_seen_at || selected.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -122,7 +157,10 @@ function ClustersPage() {
                   value={`$${(selected.monthly_cost_usd / 1000).toFixed(1)}k`}
                   accent
                 />
-                <Stat label="Confidence" value={selected.confidence ? `${selected.confidence.toFixed(1)}%` : "-"} />
+                <Stat
+                  label="Confidence"
+                  value={selected.confidence ? `${selected.confidence.toFixed(1)}%` : "-"}
+                />
               </div>
 
               {selected.root_cause && (

@@ -15,7 +15,7 @@ export const queryKeys = {
   },
   timeline: {
     all: () => ["timeline"] as const,
-    deployments: (dateRange?: { start: string; end: string }) => 
+    deployments: (dateRange?: { start: string; end: string }) =>
       ["timeline", "deployments", { dateRange }] as const,
   },
   investigations: {
@@ -25,7 +25,8 @@ export const queryKeys = {
   },
   recommendations: {
     all: () => ["recommendations"] as const,
-    byInvestigation: (investigationId: string) => ["recommendations", "byInvestigation", investigationId] as const,
+    byInvestigation: (investigationId: string) =>
+      ["recommendations", "byInvestigation", investigationId] as const,
     detail: (id: string) => ["recommendations", "detail", id] as const,
   },
   validation: {

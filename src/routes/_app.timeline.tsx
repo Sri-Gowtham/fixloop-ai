@@ -13,10 +13,52 @@ export const Route = createFileRoute("/_app/timeline")({
 });
 
 function TimelinePage() {
-  const { data: liveClusters = [], isLoading: isLoadingClusters } = useClusters(1, 20);
-  const { data: liveDeployments = [], isLoading: isLoadingDeployments } = useDeployments();
+  const {
+    data: liveClusters = [],
+    isLoading: isLoadingClusters,
+    isError: isClustersError,
+  } = useClusters(1, 20);
+  const {
+    data: liveDeployments = [],
+    isLoading: isLoadingDeployments,
+    isError: isDeploymentsError,
+  } = useDeployments();
 
   const isLoading = isLoadingClusters || isLoadingDeployments;
+  const isError = isClustersError || isDeploymentsError;
+
+  if (isError) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
+        <div className="text-4xl">⚠️</div>
+        <h2 className="text-lg font-bold text-critical">Cannot load timeline data</h2>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          {isClustersError && <span>AI service unreachable. Start <code className="text-mono">uvicorn main:app --reload --port 8000</code>. </span>}
+          {isDeploymentsError && <span>Supabase connection failed. Check <code className="text-mono">VITE_SUPABASE_URL</code> and <code className="text-mono">VITE_SUPABASE_ANON_KEY</code> in your .env file.</span>}
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p>Loading timeline...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isEmpty = (!liveClusters || liveClusters.length === 0) && (!liveDeployments || liveDeployments.length === 0);
+  if (isEmpty) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] text-center text-muted-foreground">
+        No timeline data available.
+      </div>
+    );
+  }
 
   // Map events on a normalized horizontal axis (Apr 1 → Jun 8)
   const start = new Date("2026-04-01").getTime();
@@ -37,21 +79,21 @@ function TimelinePage() {
     kind: "deploy",
     data: d,
   }));
-  
-  const clusterPts: Pt[] = liveClusters
-    .slice(0, 8)
-    .map((c, i) => ({
-      id: c.id,
-      x: pos(c.first_seen_at || c.created_at),
-      y: 65 + (i % 3) * 7,
-      kind: "cluster",
-      data: c,
-    }));
+
+  const clusterPts: Pt[] = liveClusters.slice(0, 8).map((c, i) => ({
+    id: c.id,
+    x: pos(c.first_seen_at || c.created_at),
+    y: 65 + (i % 3) * 7,
+    kind: "cluster",
+    data: c,
+  }));
 
   const links = liveClusters
     .filter((c) => c.related_deploy_id)
     .map((c) => {
-      const d = liveDeployments.find((x) => x.version === c.related_deploy_id || x.id === c.related_deploy_id);
+      const d = liveDeployments.find(
+        (x) => x.version === c.related_deploy_id || x.id === c.related_deploy_id,
+      );
       if (!d) return null;
       const from = deployPts.find((p) => p.id === d.id);
       if (!from) return null;
@@ -85,15 +127,6 @@ function TimelinePage() {
         subtitle="Lines show confidence-weighted causal links"
       >
         <div className="relative h-[460px] grid-bg rounded-md border border-border bg-surface overflow-hidden">
-          {isLoading ? (
-             <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-50">
-               <div className="flex items-center gap-2 text-muted-foreground">
-                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                 Loading timeline...
-               </div>
-             </div>
-          ) : null}
-
           {/* Center axis */}
           <div className="absolute left-0 right-0 top-1/2 h-px bg-border" />
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-muted-foreground bg-surface px-1.5 rotate-0">
@@ -225,10 +258,7 @@ function TimelinePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Panel title="Correlated Findings" subtitle="Causal links FixLoop AI surfaced this quarter">
-          {isLoadingClusters ? (
-            <div className="text-sm text-muted-foreground">Loading...</div>
-          ) : (
-            <ul className="space-y-3">
+          <ul className="space-y-3">
               {liveClusters
                 .filter((c) => c.related_deploy_id)
                 .slice(0, 5)
@@ -255,30 +285,25 @@ function TimelinePage() {
                   </li>
                 ))}
             </ul>
-          )}
         </Panel>
 
         <Panel title="Release Notes" subtitle="Annotated with downstream impact">
-          {isLoadingDeployments ? (
-             <div className="text-sm text-muted-foreground">Loading...</div>
-          ) : (
-             <ul className="space-y-3">
-               {liveDeployments.slice(0, 5).map((d) => (
-                 <li key={d.id} className="rounded-md border border-border bg-surface p-4">
-                   <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-2">
-                       <GitBranch className="h-3.5 w-3.5 text-secondary" />
-                       <span className="text-sm font-semibold text-mono">{d.version}</span>
-                       <span className="text-xs text-muted-foreground">{d.date}</span>
-                     </div>
-                     <SeverityBadge severity={d.risk} />
-                   </div>
-                   <div className="mt-1.5 text-sm">{d.title}</div>
-                   <div className="text-xs text-muted-foreground">{d.notes}</div>
-                 </li>
-               ))}
-             </ul>
-          )}
+          <ul className="space-y-3">
+              {liveDeployments.slice(0, 5).map((d) => (
+                <li key={d.id} className="rounded-md border border-border bg-surface p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <GitBranch className="h-3.5 w-3.5 text-secondary" />
+                      <span className="text-sm font-semibold text-mono">{d.version}</span>
+                      <span className="text-xs text-muted-foreground">{d.date}</span>
+                    </div>
+                    <SeverityBadge severity={d.risk} />
+                  </div>
+                  <div className="mt-1.5 text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground">{d.notes}</div>
+                </li>
+              ))}
+            </ul>
         </Panel>
       </div>
     </div>

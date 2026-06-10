@@ -26,7 +26,13 @@ import {
 } from "lucide-react";
 
 import { useClusters } from "@/hooks/useClusters";
-import { useInvestigationByCluster, useRunInvestigationMutation, type EvidenceOut } from "@/hooks/useInvestigations";
+import {
+  useInvestigationByCluster,
+  useRunInvestigationMutation,
+  type EvidenceOut,
+} from "@/hooks/useInvestigations";
+import { useRecommendations, useGenerateRecommendationMutation } from "@/hooks/useRecommendations";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/ai-command-center")({
   head: () => ({ meta: [{ title: "AI Command Center · FixLoop AI" }] }),
@@ -34,7 +40,17 @@ export const Route = createFileRoute("/_app/ai-command-center")({
 });
 
 function AICommandCenterPage() {
-  const { data: clusters = [], isLoading: isLoadingClusters } = useClusters(1, 10, undefined, "open");
+  const navigate = useNavigate({ from: "/_app/ai-command-center" });
+  const {
+    data: clusters = [],
+    isLoading: isLoadingClusters,
+    isError: isClustersError,
+  } = useClusters(
+    1,
+    10,
+    undefined,
+    "open",
+  );
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
 
   // Set first cluster as default if none selected
@@ -45,7 +61,15 @@ function AICommandCenterPage() {
   }, [clusters, selectedClusterId]);
 
   const { data: inv, isLoading: isLoadingInv } = useInvestigationByCluster(selectedClusterId || "");
-  const { mutate: runInv, isPending: isRunningInv, error: runError } = useRunInvestigationMutation();
+  const {
+    mutate: runInv,
+    isPending: isRunningInv,
+    error: runError,
+  } = useRunInvestigationMutation();
+
+  const { data: rec, isLoading: isLoadingRec } = useRecommendations(inv?.id);
+  const { mutateAsync: generateRec, isPending: isGeneratingRec } =
+    useGenerateRecommendationMutation();
 
   const [openEvidence, setOpenEvidence] = useState<string | null>(null);
   const [copilotOpen, setCopilotOpen] = useState(true);
@@ -57,18 +81,39 @@ function AICommandCenterPage() {
     }
   };
 
-  if (isLoadingClusters) {
+  const handleGenerateRecommendation = async () => {
+    if (inv && selectedClusterId) {
+      const result = await generateRec({ investigationId: inv.id, clusterId: selectedClusterId });
+      if (result) {
+        navigate({ to: "/_app/resolution", search: { recId: result.id } });
+      }
+    }
+  };
+
+  const handleProceedToResolution = () => {
+    if (rec) {
+      navigate({ to: "/_app/resolution", search: { recId: rec.id } });
+    }
+  };
+
+  if (isClustersError) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <p>Loading clusters...</p>
-        </div>
+      <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
+        <div className="text-4xl">⚠️</div>
+        <h2 className="text-lg font-bold text-critical">AI Service Unreachable</h2>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Cannot connect to{" "}
+          <code className="text-mono text-primary">
+            {import.meta.env.VITE_API_URL || "http://localhost:8000"}
+          </code>.
+          Start the FastAPI backend with{" "}
+          <code className="text-mono">uvicorn main:app --reload --port 8000</code> and reload.
+        </p>
       </div>
     );
   }
 
-  if (!clusters.length) {
+  if (!clusters || clusters.length === 0) {
     return (
       <div className="p-8">
         <PageHeader
@@ -78,6 +123,17 @@ function AICommandCenterPage() {
         />
         <div className="mt-12 text-center text-muted-foreground">
           No open clusters available for investigation.
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingClusters) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p>Loading clusters...</p>
         </div>
       </div>
     );
@@ -96,7 +152,12 @@ function AICommandCenterPage() {
                 <FileText className="h-3.5 w-3.5" />
                 Executive summary
               </FxButton>
-              <FxButton size="sm" variant="cyber" onClick={handleGenerate} disabled={isRunningInv || !selectedClusterId}>
+              <FxButton
+                size="sm"
+                variant="cyber"
+                onClick={handleGenerate}
+                disabled={isRunningInv || !selectedClusterId}
+              >
                 <Wand2 className="h-3.5 w-3.5" />
                 {isRunningInv ? "Investigating..." : "Generate investigation"}
               </FxButton>
@@ -117,25 +178,28 @@ function AICommandCenterPage() {
               key={c.id}
               onClick={() => setSelectedClusterId(c.id)}
               className={`h-9 px-3 rounded-md border text-xs font-semibold tracking-tight whitespace-nowrap flex items-center gap-2 transition-colors ${
-                selectedClusterId === c.id 
-                  ? "border-primary/60 bg-primary/10 text-foreground" 
+                selectedClusterId === c.id
+                  ? "border-primary/60 bg-primary/10 text-foreground"
                   : "border-border bg-surface text-muted-foreground hover:text-foreground hover:border-primary/30"
               }`}
             >
-              <span className="text-mono text-[10px]">{c.id.split("-")[0]}-{c.id.slice(-4)}</span>
+              <span className="text-mono text-[10px]">
+                {c.id.split("-")[0]}-{c.id.slice(-4)}
+              </span>
               <span>{c.title}</span>
             </button>
           ))}
         </div>
 
-        {isRunningInv ? (
+        {isRunningInv || isLoadingInv ? (
           <AIThinkingLoader />
-        ) : !inv ? (
+        ) : !selectedClusterId || !inv ? (
           <div className="flex flex-col items-center justify-center min-h-[40vh] border border-border rounded-lg bg-surface/50 border-dashed">
             <BrainCircuit className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-semibold">No Investigation Found</h3>
             <p className="text-sm text-muted-foreground mt-2 mb-6 max-w-sm text-center">
-              The AI has not yet analyzed this cluster. Generate a deep investigation to find the root cause.
+              The AI has not yet analyzed this cluster. Generate a deep investigation to find the
+              root cause.
             </p>
             <FxButton variant="cyber" onClick={handleGenerate}>
               <Sparkles className="h-4 w-4" />
@@ -186,7 +250,9 @@ function AICommandCenterPage() {
                       <div className="text-[10px] uppercase tracking-wider text-primary font-semibold">
                         Model confidence
                       </div>
-                      <div className="text-2xl font-bold text-mono">{inv.confidence.toFixed(1)}%</div>
+                      <div className="text-2xl font-bold text-mono">
+                        {inv.confidence.toFixed(1)}%
+                      </div>
                       <div className="text-xs text-muted-foreground mt-0.5">
                         FixLoop Reasoner · cross-source consensus
                       </div>
@@ -214,7 +280,11 @@ function AICommandCenterPage() {
                   <StatTile
                     icon={<Activity className="h-4 w-4" />}
                     label="Deploy correlation"
-                    value={inv.deploy_correlation ? `${Math.round(inv.deploy_correlation.correlation * 100)}%` : "N/A"}
+                    value={
+                      inv.deploy_correlation
+                        ? `${Math.round(inv.deploy_correlation.correlation * 100)}%`
+                        : "N/A"
+                    }
                   />
                 </div>
               </div>
@@ -302,10 +372,7 @@ function AICommandCenterPage() {
 
             {/* D. Fix Validation Simulator (Read-Only mock state if returned by Investigation or static fallback) */}
             {inv.simulation && (
-              <Panel
-                title="Simulation Forecast"
-                subtitle="Projected outcome if a fix is shipped"
-              >
+              <Panel title="Simulation Forecast" subtitle="Projected outcome if a fix is shipped">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                   <div className="lg:col-span-3">
                     <CompareCard
@@ -341,7 +408,9 @@ function AICommandCenterPage() {
                     <div className="mt-1 text-3xl font-bold text-mono">
                       ${inv.simulation.recovered_usd.toLocaleString()}
                     </div>
-                    <div className="text-xs text-muted-foreground">per month at current trajectory</div>
+                    <div className="text-xs text-muted-foreground">
+                      per month at current trajectory
+                    </div>
                     <div className="mt-3 h-1.5 rounded-full bg-accent overflow-hidden">
                       <div
                         className="h-full"
@@ -359,6 +428,34 @@ function AICommandCenterPage() {
                 </div>
               </Panel>
             )}
+
+            {/* F. Action Area to Route to Resolution Center */}
+            <div className="flex items-center justify-end gap-4 pt-4">
+              {rec ? (
+                <FxButton variant="cyber" onClick={handleProceedToResolution}>
+                  Proceed To Resolution
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </FxButton>
+              ) : (
+                <FxButton
+                  variant="cyber"
+                  onClick={handleGenerateRecommendation}
+                  disabled={isGeneratingRec}
+                >
+                  {isGeneratingRec ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating Fix Recommendation...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Generate Fix Recommendation
+                    </>
+                  )}
+                </FxButton>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -393,9 +490,11 @@ function AICommandCenterPage() {
                 </div>
                 {inv ? (
                   <>
-                    Investigating <span className="text-mono text-foreground">{inv.cluster_id}</span> —
-                    the spike correlates with deploy{" "}
-                    <span className="text-mono">{inv.deploy_correlation?.version || "None"}</span> at{" "}
+                    Investigating{" "}
+                    <span className="text-mono text-foreground">{inv.cluster_id}</span> — the spike
+                    correlates with deploy{" "}
+                    <span className="text-mono">{inv.deploy_correlation?.version || "None"}</span>{" "}
+                    at{" "}
                     <span className="text-mono text-primary">
                       {Math.round((inv.deploy_correlation?.correlation || 0) * 100)}%
                     </span>
@@ -463,23 +562,42 @@ function AIThinkingLoader() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[40vh] border border-border rounded-lg bg-surface/50 p-8">
       <div className="relative mb-8">
-        <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ background: "var(--primary)" }} />
-        <div className="h-16 w-16 rounded-full flex items-center justify-center relative z-10" style={{ background: "var(--gradient-cyber)" }}>
+        <div
+          className="absolute inset-0 rounded-full animate-ping opacity-20"
+          style={{ background: "var(--primary)" }}
+        />
+        <div
+          className="h-16 w-16 rounded-full flex items-center justify-center relative z-10"
+          style={{ background: "var(--gradient-cyber)" }}
+        >
           <BrainCircuit className="h-8 w-8 text-primary-foreground animate-pulse" />
         </div>
       </div>
-      
+
       <div className="space-y-4 w-full max-w-sm">
         {states.map((s, i) => {
           const active = i === step;
           const done = i < step;
           const Icon = s.icon;
           return (
-            <div key={i} className={`flex items-center gap-3 transition-opacity duration-500 ${active || done ? "opacity-100" : "opacity-30"}`}>
-              <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 border ${done ? "bg-primary/20 border-primary text-primary" : active ? "bg-accent border-accent-foreground/20 text-foreground" : "bg-surface border-border text-muted-foreground"}`}>
-                {done ? <ShieldCheck className="h-3.5 w-3.5" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3 w-3" />}
+            <div
+              key={i}
+              className={`flex items-center gap-3 transition-opacity duration-500 ${active || done ? "opacity-100" : "opacity-30"}`}
+            >
+              <div
+                className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 border ${done ? "bg-primary/20 border-primary text-primary" : active ? "bg-accent border-accent-foreground/20 text-foreground" : "bg-surface border-border text-muted-foreground"}`}
+              >
+                {done ? (
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                ) : active ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Icon className="h-3 w-3" />
+                )}
               </div>
-              <span className={`text-sm ${active ? "font-semibold text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}>
+              <span
+                className={`text-sm ${active ? "font-semibold text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}
+              >
                 {s.label}
               </span>
             </div>

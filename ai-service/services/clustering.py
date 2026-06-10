@@ -13,7 +13,7 @@ Pipeline
        a. Compute centroid embedding (mean of member vectors)
        b. Extract example titles and date ranges
        c. Count unique affected customers
-  ⑥ Batch-label clusters using OpenAI GPT-4o or Google Gemini
+  ⑥ Batch-label clusters using Groq
        → title, summary, severity, confidence, product_area
   ⑦ Upsert cluster rows into public.ticket_clusters
   ⑧ Insert cluster_tickets junction rows
@@ -274,7 +274,7 @@ def _build_cluster_records(
 
 
 # ============================================================
-# ④ LLM labelling (OpenAI + Gemini)
+# ④ LLM labelling (Groq)
 # ============================================================
 
 _LABEL_SYSTEM_PROMPT = """\
@@ -315,60 +315,21 @@ def _build_label_prompt(records: list[ClusterRecord]) -> str:
     return json.dumps(clusters_json, indent=2)
 
 
-async def _label_with_openai(records: list[ClusterRecord]) -> list[ClusterLabel]:
-    """Call OpenAI GPT-4o to generate labels for a batch of clusters."""
-    from openai import AsyncOpenAI
-    from tenacity import retry, stop_after_attempt, wait_exponential
+from services.llm import generate_cluster_labels
 
-    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=30), reraise=True)
-    async def _call() -> str:
-        resp = await client.chat.completions.create(
-            model=settings.OPENAI_CHAT_MODEL,
-            messages=[
-                {"role": "system", "content": _LABEL_SYSTEM_PROMPT},
-                {"role": "user",   "content": _build_label_prompt(records)},
-            ],
-            temperature=0.2,
-            response_format={"type": "json_object"},
-        )
-        return resp.choices[0].message.content or "[]"
-
-    raw = await _call()
-    return _parse_label_response(raw, len(records))
-
-
-async def _label_with_gemini(records: list[ClusterRecord]) -> list[ClusterLabel]:
-    """Call Google Gemini to generate labels for a batch of clusters."""
+async def _label_with_groq(records: list[ClusterRecord]) -> list[ClusterLabel]:
+    """Call Groq to generate labels for a batch of clusters."""
+    prompt = _build_label_prompt(records)
+    
     try:
-        import google.generativeai as genai  # type: ignore
-    except ImportError:
-        raise RuntimeError(
-            "google-generativeai is not installed. "
-            "Run: pip install google-generativeai"
+        raw = await generate_cluster_labels(
+            system_prompt=_LABEL_SYSTEM_PROMPT,
+            user_prompt=prompt,
         )
-
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel(settings.GEMINI_MODEL)
-
-    prompt = (
-        f"{_LABEL_SYSTEM_PROMPT}\n\n"
-        f"Input:\n{_build_label_prompt(records)}"
-    )
-
-    from tenacity import retry, stop_after_attempt, wait_exponential
-
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=30), reraise=True)
-    async def _call() -> str:
-        response = await model.generate_content_async(
-            prompt,
-            generation_config={"temperature": 0.2},
-        )
-        return response.text
-
-    raw = await _call()
-    return _parse_label_response(raw, len(records))
+        return _parse_label_response(raw, len(records))
+    except Exception as exc:
+        logger.error("groq_labelling_failed", error=str(exc))
+        return _fallback_labels(len(records))
 
 
 def _parse_label_response(raw: str, expected_count: int) -> list[ClusterLabel]:
@@ -442,7 +403,6 @@ async def _label_clusters(records: list[ClusterRecord]) -> list[ClusterLabel]:
     Generate human-readable labels for all cluster records.
 
     Processes in batches of CLUSTER_LLM_BATCH_SIZE.
-    Selects backend (OpenAI / Gemini) from config.
     """
     all_labels: list[ClusterLabel] = []
     batch_size = settings.CLUSTER_LLM_BATCH_SIZE
@@ -458,10 +418,7 @@ async def _label_clusters(records: list[ClusterRecord]) -> list[ClusterLabel]:
         )
 
         try:
-            if settings.CLUSTER_LLM_BACKEND == "gemini" and settings.GEMINI_API_KEY:
-                labels = await _label_with_gemini(batch)
-            else:
-                labels = await _label_with_openai(batch)
+            labels = await _label_with_groq(batch)
         except Exception as exc:
             logger.error(
                 "llm_labelling_failed",
@@ -623,7 +580,7 @@ async def run_clustering(request: ClusterRequest) -> ClusteringResult:
         ② Normalise embeddings (L2) for cosine-equivalent distance
         ③ Run HDBSCAN (or DBSCAN fallback)
         ④ Build ClusterRecord objects with centroids and metadata
-        ⑤ Batch-label clusters via OpenAI / Gemini
+        ⑤ Batch-label clusters via Groq
         ⑥ Upsert ticket_clusters rows
         ⑦ Insert cluster_tickets junction rows
         ⑧ Update tickets with cluster assignment

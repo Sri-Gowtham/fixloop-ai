@@ -9,30 +9,27 @@ import { supabase } from "@/lib/supabase";
 export function useSupabaseSync(
   table: string,
   queryKeysToInvalidate: ReadonlyArray<unknown>[],
-  event: "INSERT" | "UPDATE" | "DELETE" | "*" = "*"
+  event: "INSERT" | "UPDATE" | "DELETE" | "*" = "*",
 ) {
   const queryClient = useQueryClient();
+
+  const serializedKeys = JSON.stringify(queryKeysToInvalidate);
 
   useEffect(() => {
     // Create a Supabase channel for this table
     const channel = supabase
       .channel(`public:${table}`)
-      .on(
-        "postgres_changes",
-        { event, schema: "public", table },
-        (payload) => {
-          console.log(`[Realtime] ${event} on ${table}`, payload);
-          // Invalidate all associated query keys so React Query refetches automatically
-          queryKeysToInvalidate.forEach((key) => {
-            queryClient.invalidateQueries({ queryKey: key });
-          });
-        }
-      )
+      .on("postgres_changes", { event, schema: "public", table }, (payload) => {
+        // Invalidate all associated query keys so React Query refetches automatically
+        queryKeysToInvalidate.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: key });
+        });
+      })
       .subscribe();
 
     return () => {
       // Cleanup the subscription when the component unmounts
       supabase.removeChannel(channel);
     };
-  }, [table, event, queryKeysToInvalidate, queryClient]);
+  }, [table, event, serializedKeys, queryClient]);
 }

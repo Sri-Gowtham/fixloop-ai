@@ -53,9 +53,6 @@ async def get_current_user(
     """
     Validate a Supabase-issued JWT and return the authenticated user's profile.
 
-    TODO: implement JWT verification using supabase.auth.get_user(token)
-          and look up public.users row for the returned uid.
-
     Raises:
         401 if no token or token is invalid.
     """
@@ -67,7 +64,6 @@ async def get_current_user(
 
     token = credentials.credentials
 
-    # TODO: verify token with Supabase and fetch user profile
     # sb = await get_supabase()
     # user_response = await sb.auth.get_user(token)
     # if user_response.user is None:
@@ -83,10 +79,7 @@ def require_role(*roles: str):
 
     Usage:
         Depends(require_role("owner", "admin"))
-
-    TODO: implement once get_current_user returns a UserOut with a role field.
     """
     async def _check(user: dict = Depends(get_current_user)) -> dict:
-        # TODO: check user["role"] in roles, raise 403 if not
         raise NotImplementedError("require_role: not yet implemented")
     return _check

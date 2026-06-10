@@ -24,11 +24,8 @@ _client: AsyncClient | None = None
 
 
 async def get_supabase() -> AsyncClient:
-    """
     Returns the shared Supabase AsyncClient.
     Initialised lazily on first call and re-used across requests.
-
-    TODO: replace with connection-pool wrapper when traffic grows.
     """
     global _client
     if _client is None:

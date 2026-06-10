@@ -29,16 +29,21 @@ class Settings(BaseSettings):
     DATABASE_URL: str                      # direct asyncpg / psycopg2 connection
 
     # ---- OpenAI ----
-    OPENAI_API_KEY: str
+    OPENAI_API_KEY: Optional[str] = None
     OPENAI_EMBED_MODEL: str = "text-embedding-3-small"   # 1536-dim, matches schema
     OPENAI_CHAT_MODEL: str = "gpt-4o"
 
     # ---- Google Gemini (optional — used for cluster label generation) ----
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-1.5-flash"
+    
+    # ---- Groq ----
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    LLM_PROVIDER: str = Field("openai", pattern="^(openai|gemini|groq)$")
 
-    # LLM backend selection: "openai" | "gemini"
-    CLUSTER_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini)$")
+    # LLM backend selection
+    CLUSTER_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini|groq)$")
 
     # ---- CORS ----
     CORS_ORIGINS: List[AnyHttpUrl] = [
@@ -62,12 +67,12 @@ class Settings(BaseSettings):
     INVESTIGATION_CONFIDENCE_THRESHOLD: float = 0.70
     DEPLOY_CORRELATION_WINDOW_DAYS: int = 7
     INVESTIGATION_TICKET_SAMPLE_SIZE: int = 30   # ticket samples sent to LLM
-    INVESTIGATION_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini)$")
+    INVESTIGATION_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini|groq)$")
     # Revenue: average support cost per ticket per month (used for estimate)
     REVENUE_COST_PER_TICKET_USD: float = 70.0
 
     # ---- Recommendations ----
-    RECOMMENDATION_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini)$")
+    RECOMMENDATION_LLM_BACKEND: str = Field("openai", pattern="^(openai|gemini|groq)$")
     RECOMMENDATION_CACHE_DAYS: int = 7   # reuse recent recs for the same investigation
 
 

@@ -68,22 +68,30 @@ export function useRunInvestigationMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ clusterId, forceRefresh = false }: { clusterId: string; forceRefresh?: boolean }) => {
+    mutationFn: async ({
+      clusterId,
+      forceRefresh = false,
+    }: {
+      clusterId: string;
+      forceRefresh?: boolean;
+    }) => {
       const { data } = await api.post<InvestigationOut>("/ai/investigate", {
         cluster_id: clusterId,
         force_refresh: forceRefresh,
-        confidence_threshold: 0.70,
+        confidence_threshold: 0.7,
         deploy_correlation_days: 7,
       });
       return data;
     },
     onSuccess: (data, variables) => {
       // Invalidate cluster-specific and general investigation queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.investigations.byCluster(variables.clusterId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.investigations.byCluster(variables.clusterId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.investigations.all() });
       if (data?.id) {
         queryClient.setQueryData(queryKeys.investigations.detail(data.id), data);
       }
     },
   });
-} 
+}

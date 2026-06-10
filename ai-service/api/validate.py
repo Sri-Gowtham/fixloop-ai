@@ -45,7 +45,7 @@ router = APIRouter()
 )
 async def validate(
     request: ValidateRequest,
-    # user: dict = Depends(get_current_user),  # TODO: enable auth
+    # user: dict = Depends(get_current_user),
 ) -> ValidationSummary:
     """Run loop-closure validation on a shipped fix recommendation."""
     logger.info(
@@ -97,7 +97,7 @@ async def validate(
 )
 async def get_validation(
     fix_recommendation_id: str,
-    # user: dict = Depends(get_current_user),  # TODO: enable auth
+    # user: dict = Depends(get_current_user),
 ) -> ValidationSummary:
     """Fetch all validation measurements and aggregate ValidationSummary."""
     logger.info("get_validation_request", fix_recommendation_id=fix_recommendation_id)

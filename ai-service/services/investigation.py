@@ -8,7 +8,7 @@ Pipeline
   ① Load cluster metadata + member ticket samples from Supabase
   ② Query deployments within the correlation window
   ③ Detect deploy-spike correlation (temporal proximity + ticket-count delta)
-  ④ Run LLM reasoning chain (OpenAI GPT-4o or Google Gemini)
+  ④ Run LLM reasoning chain (Groq)
        → root_cause, confidence, impact_level, revenue_impact,
          reasoning_steps, evidence_items, simulation
   ⑤ Persist to public.investigations + public.investigation_evidence
@@ -370,63 +370,37 @@ Produce the root-cause investigation JSON.
 """.strip()
 
 
-async def _call_openai_reasoner(
+from services.llm import generate_investigation
+
+async def _run_reasoner(
     ctx: ClusterContext,
     correlation: CorrelationResult,
 ) -> ReasonerOutput:
-    """Call OpenAI GPT-4o with the reasoning prompt."""
-    from openai import AsyncOpenAI
-    from tenacity import retry, stop_after_attempt, wait_exponential
+    """Dispatch to the Groq LLM backend."""
+    logger.info(
+        "reasoner_start",
+        cluster_id = ctx.cluster_id,
+        backend    = "groq",
+        ticket_samples = len(ctx.ticket_samples),
+    )
 
-    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    prompt = _build_reasoner_prompt(ctx, correlation)
-
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=30), reraise=True)
-    async def _call() -> str:
-        resp = await client.chat.completions.create(
-            model    = settings.OPENAI_CHAT_MODEL,
-            messages = [
-                {"role": "system", "content": _REASONER_SYSTEM},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature     = 0.1,
-            response_format = {"type": "json_object"},
-        )
-        return resp.choices[0].message.content or "{}"
-
-    raw = await _call()
-    return _parse_reasoner_output(raw, ctx)
-
-
-async def _call_gemini_reasoner(
-    ctx: ClusterContext,
-    correlation: CorrelationResult,
-) -> ReasonerOutput:
-    """Call Google Gemini with the reasoning prompt."""
     try:
-        import google.generativeai as genai  # type: ignore
-    except ImportError:
-        raise RuntimeError(
-            "google-generativeai is not installed. Run: pip install google-generativeai"
+        raw = await generate_investigation(
+            system_prompt=_REASONER_SYSTEM,
+            user_prompt=_build_reasoner_prompt(ctx, correlation),
         )
+        output = _parse_reasoner_output(raw, ctx)
+    except Exception as exc:
+        logger.error("reasoner_failed", error=str(exc), cluster_id=ctx.cluster_id)
+        output = _fallback_reasoner_output(ctx)
 
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model   = genai.GenerativeModel(settings.GEMINI_MODEL)
-    prompt  = f"{_REASONER_SYSTEM}\n\n{_build_reasoner_prompt(ctx, correlation)}"
-
-    from tenacity import retry, stop_after_attempt, wait_exponential
-
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=30), reraise=True)
-    async def _call() -> str:
-        resp = await model.generate_content_async(
-            prompt,
-            generation_config={"temperature": 0.1},
-        )
-        return resp.text
-
-    raw = await _call()
-    return _parse_reasoner_output(raw, ctx)
-
+    logger.info(
+        "reasoner_complete",
+        cluster_id  = ctx.cluster_id,
+        confidence  = output.confidence,
+        impact      = output.impact_level,
+    )
+    return output
 
 def _parse_reasoner_output(raw: str, ctx: ClusterContext) -> ReasonerOutput:
     """
@@ -523,36 +497,7 @@ def _fallback_reasoner_output(ctx: ClusterContext) -> ReasonerOutput:
     )
 
 
-async def _run_reasoner(
-    ctx: ClusterContext,
-    correlation: CorrelationResult,
-) -> ReasonerOutput:
-    """Dispatch to the configured LLM backend."""
-    backend = settings.INVESTIGATION_LLM_BACKEND
 
-    logger.info(
-        "reasoner_start",
-        cluster_id = ctx.cluster_id,
-        backend    = backend,
-        ticket_samples = len(ctx.ticket_samples),
-    )
-
-    try:
-        if backend == "gemini" and settings.GEMINI_API_KEY:
-            output = await _call_gemini_reasoner(ctx, correlation)
-        else:
-            output = await _call_openai_reasoner(ctx, correlation)
-    except Exception as exc:
-        logger.error("reasoner_failed", error=str(exc), cluster_id=ctx.cluster_id)
-        output = _fallback_reasoner_output(ctx)
-
-    logger.info(
-        "reasoner_complete",
-        cluster_id  = ctx.cluster_id,
-        confidence  = output.confidence,
-        impact      = output.impact_level,
-    )
-    return output
 
 
 # ============================================================

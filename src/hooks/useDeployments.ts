@@ -29,7 +29,7 @@ export function useDeployments(start?: string, end?: string) {
       }
 
       const { data, error } = await query;
-      
+
       if (error) {
         console.error("Failed to fetch deployments from Supabase", error);
         throw error;
@@ -39,7 +39,7 @@ export function useDeployments(start?: string, end?: string) {
         id: d.id,
         version: d.version || d.id,
         title: d.title,
-        date: d.deployed_at ? new Date(d.deployed_at).toISOString().split('T')[0] : "",
+        date: d.deployed_at ? new Date(d.deployed_at).toISOString().split("T")[0] : "",
         notes: d.notes,
         risk: d.risk || "medium",
       })) as DeploymentRow[];

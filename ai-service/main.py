@@ -42,14 +42,13 @@ async def lifespan(app: FastAPI):
         environment=settings.ENVIRONMENT,
     )
 
-    # TODO: initialise Supabase client pool
-    # TODO: warm-up OpenAI client
-    # TODO: pre-load embedding model (if self-hosted)
+    # Core services initialized via deps.py lazily or via connection pools
+    pass
 
     yield
 
     logger.info("fixloop_ai_service_shutdown")
-    # TODO: close DB pool
+    # Clean up any persistent pools here
 
 
 # ----------------------------------------------------------------

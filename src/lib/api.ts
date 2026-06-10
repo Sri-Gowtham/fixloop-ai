@@ -9,7 +9,7 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 60000, // 60s timeout for heavy LLM routes
+  timeout: 10000, // 10s timeout to fail fast
 });
 
 // Request interceptor to attach tokens if auth is added later
@@ -28,5 +28,5 @@ api.interceptors.response.use(
     // We could integrate a global toast notification here
     // e.g., toast.error(error.response?.data?.detail || "An unexpected error occurred");
     return Promise.reject(error);
-  }
+  },
 );
