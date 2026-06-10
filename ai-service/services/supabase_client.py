@@ -14,17 +14,17 @@ Usage:
 from functools import lru_cache
 
 import structlog
-from supabase import AsyncClient, acreate_client
+from supabase import AClient, acreate_client
 
 from core.config import settings
 
 logger = structlog.get_logger(__name__)
 
-_client: AsyncClient | None = None
+_client: AClient | None = None
 
 
-async def get_supabase() -> AsyncClient:
-    Returns the shared Supabase AsyncClient.
+async def get_supabase() -> AClient:
+    """Returns the shared Supabase AsyncClient.
     Initialised lazily on first call and re-used across requests.
     """
     global _client
