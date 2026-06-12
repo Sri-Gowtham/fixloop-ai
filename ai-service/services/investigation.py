@@ -642,9 +642,9 @@ def _row_to_investigation_out(
     if row.get("deploy_correlation_id"):
         deploy_correlation = DeployCorrelation(
             deploy_id   = row["deploy_correlation_id"],
-            version     = "",       # enriched separately if needed
-            deployed_at = "",
-            title       = "",
+            version     = row.get("_deploy_version", ""),
+            deployed_at = row.get("_deploy_deployed_at", ""),
+            title       = row.get("_deploy_title", ""),
             correlation = float(row.get("deploy_correlation_score") or 0.0),
         )
 

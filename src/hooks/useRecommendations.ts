@@ -12,6 +12,10 @@ export interface RecommendationOut {
   confidence_score?: number;
   expected_reduction_pct?: number;
   expected_recovery_usd?: number;
+  actual_reduction_pct?: number;
+  actual_recovery_usd?: number;
+  before_ticket_count?: number;
+  after_ticket_count?: number;
   estimated_eta?: string;
   jira_title?: string;
   jira_description?: string;
@@ -38,20 +42,13 @@ import { supabase } from "@/lib/supabase";
 import { useSupabaseSync } from "./useSupabaseSync";
 
 export function useAllRecommendations() {
-  useSupabaseSync("fix_recommendations", [["recommendations", "all"]]);
+  // useSupabaseSync("fix_recommendations", [["recommendations", "all"]]);
 
   return useQuery({
     queryKey: ["recommendations", "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fix_recommendations")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-      return data as RecommendationOut[];
+      const { data } = await api.get<RecommendationOut[]>("/ai/recommend");
+      return data;
     },
   });
 }

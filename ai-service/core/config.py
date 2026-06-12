@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[AnyHttpUrl] = [
         "http://localhost:5173",   # Vite dev server
         "http://localhost:3000",
+        "http://localhost:8080",
     ]
 
     # ---- Ingestion pipeline ----

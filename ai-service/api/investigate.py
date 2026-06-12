@@ -237,6 +237,21 @@ async def list_cluster_investigations(
                 .order("sort_order")
                 .execute()
             )
+            if row.get("deploy_correlation_id"):
+                try:
+                    deploy_resp = (
+                        await sb.table("deployments")
+                        .select("id, version, title, deployed_at")
+                        .eq("id", row["deploy_correlation_id"])
+                        .single()
+                        .execute()
+                    )
+                    deploy_data = deploy_resp.data or {}
+                    row["_deploy_version"]     = deploy_data.get("version", "")
+                    row["_deploy_title"]       = deploy_data.get("title", "")
+                    row["_deploy_deployed_at"] = deploy_data.get("deployed_at", "")
+                except Exception:
+                    pass
             results.append(_row_to_investigation_out(row, ev_resp.data or []))
         except Exception as exc:
             logger.warning(
@@ -246,3 +261,9 @@ async def list_cluster_investigations(
             )
 
     return results
+
+@router.get("/investigate", response_model=list[InvestigationOut], status_code=status.HTTP_200_OK)
+async def list_investigations(limit: int = 10) -> list[InvestigationOut]:
+    sb = await get_supabase()
+    resp = await sb.table("investigations").select("*").order("created_at", desc=True).limit(limit).execute()
+    return [_row_to_investigation_out(row, []) for row in (resp.data or [])]

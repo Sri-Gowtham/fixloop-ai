@@ -159,6 +159,7 @@ async def run_validation(request: ValidateRequest) -> ValidationSummary:
         "actual_reduction_pct": deflection_pct,
         "actual_recovery_usd": revenue_recovered,
         "after_ticket_count": after_ticket_count,
+        "before_ticket_count": before_ticket_count,
     }
     if loop_closed and rec_row.get("status") != "resolved":
         rec_update["status"] = "resolved"

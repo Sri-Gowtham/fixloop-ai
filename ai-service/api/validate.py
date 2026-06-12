@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from agents.validate_agent import ValidateAgent
 from models.validation import ValidateRequest, ValidationSummary
+from services.supabase_client import get_supabase
 from services.validation import get_validation_summary
 
 logger = structlog.get_logger(__name__)
@@ -116,3 +117,15 @@ async def get_validation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database error: {exc}",
         )
+
+@router.get("/validate", response_model=list[ValidationSummary], status_code=status.HTTP_200_OK)
+async def list_validations(limit: int = 10) -> list[ValidationSummary]:
+    sb = await get_supabase()
+    resp = await sb.table("validation_results").select("fix_recommendation_id").limit(limit).execute()
+    results = []
+    for row in (resp.data or []):
+        try:
+            results.append(await get_validation_summary(row["fix_recommendation_id"]))
+        except:
+            pass
+    return results

@@ -190,3 +190,9 @@ async def list_investigation_recommendations(
             )
 
     return results
+
+@router.get("/recommend", response_model=list[RecommendationOut], status_code=status.HTTP_200_OK)
+async def list_recommendations(limit: int = 10) -> list[RecommendationOut]:
+    sb = await get_supabase()
+    resp = await sb.table("fix_recommendations").select("*").order("created_at", desc=True).limit(limit).execute()
+    return [_row_to_recommendation_out(row) for row in (resp.data or [])]

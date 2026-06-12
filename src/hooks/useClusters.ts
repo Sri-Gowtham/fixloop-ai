@@ -29,7 +29,7 @@ export function useClusters(page = 1, size = 20, severity?: string, status?: str
   // Sync automatically when ticket_clusters changes in Supabase
   useSupabaseSync("ticket_clusters", [queryKeys.clusters.all()]);
 
-  return useQuery({
+  const result = useQuery({
     queryKey: queryKeys.clusters.list({ page, size, severity, status }),
     queryFn: async () => {
       const { data } = await api.get<ClusterOut[]>("/ai/cluster", {
@@ -38,6 +38,16 @@ export function useClusters(page = 1, size = 20, severity?: string, status?: str
       return data;
     },
   });
+
+  console.log("Query Result", {
+    isLoading: result.isLoading,
+    isFetching: result.isFetching,
+    isPending: result.isPending,
+    error: result.error,
+    data: result.data
+  });
+
+  return result;
 }
 
 export function useCluster(id: string) {

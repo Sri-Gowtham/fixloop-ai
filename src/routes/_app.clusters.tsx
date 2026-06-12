@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHeader } from "@/components/fixloop/PageHeader";
 import { ClusterCard } from "@/components/fixloop/ClusterCard";
@@ -210,9 +210,11 @@ function ClustersPage() {
               )}
 
               <div className="flex gap-2 pt-2">
-                <FxButton size="sm" className="flex-1">
-                  Propose fix
-                </FxButton>
+                <Link to="/ai-command-center" search={{ clusterId: selected.id }} className="flex-1">
+                  <FxButton size="sm" className="w-full">
+                    Propose fix
+                  </FxButton>
+                </Link>
                 <FxButton size="sm" variant="outline" className="flex-1">
                   Notify owner
                 </FxButton>

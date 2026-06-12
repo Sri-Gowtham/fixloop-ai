@@ -5,8 +5,7 @@ import { ArrowUpRight, Users, DollarSign, Sparkles } from "lucide-react";
 
 export function ClusterCard({ cluster }: { cluster: Cluster }) {
   return (
-    <Link
-      to="/clusters"
+    <div
       className="group relative block overflow-hidden rounded-lg border border-border bg-card p-5 transition-all hover:border-primary/40 hover:bg-card/80"
     >
       <div className="flex items-start justify-between gap-4">
@@ -31,7 +30,7 @@ export function ClusterCard({ cluster }: { cluster: Cluster }) {
           value={`$${(cluster.monthlyCost / 1000).toFixed(1)}k`}
         />
         <Stat icon={Users} label="Customers" value={cluster.affectedCustomers.toString()} />
-        <Stat icon={Sparkles} label="Confidence" value={`${cluster.confidence}%`} />
+        <Stat icon={Sparkles} label="Confidence" value={cluster.confidence ? `${cluster.confidence}%` : "N/A"} />
       </div>
 
       <div className="mt-3 flex items-center justify-between text-xs">
@@ -42,7 +41,7 @@ export function ClusterCard({ cluster }: { cluster: Cluster }) {
           Inspect <ArrowUpRight className="h-3 w-3" />
         </span>
       </div>
-    </Link>
+    </div>
   );
 }
 

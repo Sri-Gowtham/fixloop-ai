@@ -217,32 +217,32 @@ function ResolutionPage() {
                 </thead>
                 <tbody>
                   {/* Empty state handled at top level */}
-                    recommendations.map((r) => (
-                      <tr
-                        key={r.id}
-                        className="border-b border-border/50 align-top hover:bg-accent/30 cursor-pointer"
-                        onClick={() => setSelectedRecId(r.id)}
-                      >
-                        <td className="py-3 pr-3">
-                          <div className="font-medium text-primary hover:underline">{r.title}</div>
-                          <div className="text-xs text-muted-foreground text-mono">
-                            {r.cluster_id} · {r.id.split("-")[0]}
-                          </div>
-                        </td>
-                        <td className="py-3 pr-3 text-mono text-xs">
-                          {r.engineering_effort?.replace("_", " ")}
-                        </td>
-                        <td className="py-3 text-right text-mono text-secondary font-semibold">
-                          {r.expected_reduction_pct}%
-                        </td>
-                        <td className="py-3 text-right text-mono text-primary font-semibold">
-                          ${((r.expected_recovery_usd || 0) / 1000).toFixed(1)}k
-                        </td>
-                        <td className="py-3 text-right">
-                          <StatusBadge status={r.status as any} />
-                        </td>
-                      </tr>
-                    ))
+                  {recommendations.map((r) => (
+                    <tr
+                      key={r.id}
+                      className="border-b border-border/50 align-top hover:bg-accent/30 cursor-pointer"
+                      onClick={() => setSelectedRecId(r.id)}
+                    >
+                      <td className="py-3 pr-3">
+                        <div className="font-medium text-primary hover:underline">{r.title}</div>
+                        <div className="text-xs text-muted-foreground text-mono">
+                          {r.cluster_id} · {r.id.split("-")[0]}
+                        </div>
+                      </td>
+                      <td className="py-3 pr-3 text-mono text-xs">
+                        {r.engineering_effort?.replace("_", " ")}
+                      </td>
+                      <td className="py-3 text-right text-mono text-secondary font-semibold">
+                        {r.expected_reduction_pct}%
+                      </td>
+                      <td className="py-3 text-right text-mono text-primary font-semibold">
+                        ${((r.expected_recovery_usd || 0) / 1000).toFixed(1)}k
+                      </td>
+                      <td className="py-3 text-right">
+                        <StatusBadge status={r.status as any} />
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

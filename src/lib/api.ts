@@ -4,8 +4,11 @@ import axios from "axios";
  * Production-ready API client configured with Axios.
  * Points to the FastAPI backend (proxied or direct).
  */
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+console.log("BASE_URL", BASE_URL);
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -23,10 +26,13 @@ api.interceptors.request.use((config) => {
 
 // Global response error handler
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log("Status", response.status);
+    console.log("Body", response.data);
+    console.log("Array?", Array.isArray(response.data));
+    return response;
+  },
   (error) => {
-    // We could integrate a global toast notification here
-    // e.g., toast.error(error.response?.data?.detail || "An unexpected error occurred");
     return Promise.reject(error);
   },
 );
