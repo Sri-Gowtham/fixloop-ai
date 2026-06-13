@@ -27,9 +27,13 @@ api.interceptors.request.use((config) => {
 // Global response error handler
 api.interceptors.response.use(
   (response) => {
-    console.log("Status", response.status);
-    console.log("Body", response.data);
-    console.log("Array?", Array.isArray(response.data));
+    console.log("=== API RESPONSE ===");
+    console.log("BASE_URL:", BASE_URL);
+    console.log("Request URL:", response.config.url);
+    console.log("Response status:", response.status);
+    console.log("Response body:", response.data);
+    console.log("Is Array?", Array.isArray(response.data));
+    console.log("====================");
     return response;
   },
   (error) => {

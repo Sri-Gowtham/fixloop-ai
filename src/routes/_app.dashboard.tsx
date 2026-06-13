@@ -21,6 +21,10 @@ import {
   ShieldCheck,
   Download,
   Filter,
+  Lightbulb,
+  CheckCircle,
+  Server,
+  Ticket,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -39,6 +43,7 @@ import {
 } from "recharts";
 
 import { useClusters } from "@/hooks/useClusters";
+import { useStats } from "@/hooks/useStats";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · FixLoop AI" }] }),
@@ -62,6 +67,8 @@ const tooltipStyle = {
 function DashboardPage() {
   // Fetch live clusters for the top table
   const { data: liveClusters = [], isLoading: isLoadingClusters } = useClusters(1, 6);
+  // Fetch live stats
+  const { data: stats, isLoading: isLoadingStats } = useStats();
 
   return (
     <div className="p-8 space-y-8">
@@ -83,46 +90,54 @@ function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <MetricCard
-          label="Revenue at Risk"
-          value="$340K"
-          delta="+12%"
-          deltaDir="up"
-          deltaGood="down"
-          icon={DollarSign}
-          accent="critical"
-          spark={[120, 140, 180, 210, 260, 290, 310, 340]}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <PremiumMetricCard
+          label="Total Tickets"
+          value={isLoadingStats ? "-" : (stats?.total_tickets ?? 0).toLocaleString()}
+          icon={Ticket}
+          accent="text-blue-500"
+          bg="bg-blue-500/10"
+          border="border-blue-500/20"
         />
-        <MetricCard
-          label="Open Clusters"
-          value="9"
-          delta="+2"
-          deltaDir="up"
-          deltaGood="down"
+        <PremiumMetricCard
+          label="Active Clusters"
+          value={isLoadingStats ? "-" : stats?.active_clusters?.toString()}
           icon={AlertOctagon}
-          accent="primary"
-          spark={[4, 5, 6, 7, 7, 8, 9, 9]}
+          accent="text-[color:var(--primary)]"
+          bg="bg-primary/10"
+          border="border-primary/20"
         />
-        <MetricCard
-          label="Affected Customers"
-          value="4,247"
-          delta="+318"
-          deltaDir="up"
-          deltaGood="down"
-          icon={Users}
-          accent="warning"
-          spark={[2100, 2400, 2900, 3300, 3700, 3900, 4100, 4247]}
+        <PremiumMetricCard
+          label="Revenue Risk"
+          value={isLoadingStats ? "-" : `$${((stats?.revenue_risk_usd ?? 0) / 1000).toFixed(1)}k`}
+          icon={DollarSign}
+          accent="text-[color:var(--critical)]"
+          bg="bg-critical/10"
+          border="border-critical/20"
         />
-        <MetricCard
-          label="Resolved Issues"
-          value="91%"
-          delta="+4.2%"
-          deltaDir="up"
-          deltaGood="up"
-          icon={ShieldCheck}
-          accent="secondary"
-          spark={[78, 80, 82, 85, 86, 88, 90, 91]}
+        <PremiumMetricCard
+          label="Recommendations"
+          value={isLoadingStats ? "-" : stats?.recommendations_generated?.toString()}
+          icon={Lightbulb}
+          accent="text-[color:var(--warning)]"
+          bg="bg-warning/10"
+          border="border-warning/20"
+        />
+        <PremiumMetricCard
+          label="Fix Success Rate"
+          value={isLoadingStats ? "-" : `${stats?.fix_success_rate_pct ?? 0}%`}
+          icon={CheckCircle}
+          accent="text-[color:var(--secondary)]"
+          bg="bg-secondary/10"
+          border="border-secondary/20"
+        />
+        <PremiumMetricCard
+          label="Deployments Tracked"
+          value={isLoadingStats ? "-" : stats?.deployments_tracked?.toString()}
+          icon={Server}
+          accent="text-purple-500"
+          bg="bg-purple-500/10"
+          border="border-purple-500/20"
         />
       </div>
 
@@ -431,6 +446,45 @@ function Heatmap() {
             })}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PremiumMetricCard({
+  label,
+  value,
+  icon: Icon,
+  accent,
+  bg,
+  border,
+}: {
+  label: string;
+  value: string | undefined;
+  icon: any;
+  accent: string;
+  bg: string;
+  border: string;
+}) {
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-xl border ${border} bg-card/40 p-6 backdrop-blur-xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:bg-card/60`}
+    >
+      <div
+        className={`absolute -right-12 -top-12 h-32 w-32 rounded-full ${bg} blur-2xl transition-all duration-500 group-hover:scale-150`}
+      />
+      <div className="relative flex items-center justify-between">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1">
+            {label}
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-foreground mt-1">
+            {value}
+          </div>
+        </div>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${bg} ${border} border`}>
+          <Icon className={`h-6 w-6 ${accent}`} />
+        </div>
       </div>
     </div>
   );

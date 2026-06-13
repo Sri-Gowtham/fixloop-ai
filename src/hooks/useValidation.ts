@@ -17,7 +17,7 @@ export interface ValidationSummary {
 }
 
 export function useValidation(recommendationId?: string) {
-  return useQuery({
+  const result = useQuery({
     queryKey: ["validation", "detail", recommendationId],
     queryFn: async () => {
       const { data } = await api.get<ValidationSummary>(`/ai/validate/${recommendationId}`);
@@ -26,6 +26,12 @@ export function useValidation(recommendationId?: string) {
     enabled: !!recommendationId,
     retry: false, // Don't retry if it returns 404 (no validation yet)
   });
+
+  console.log("data", result.data);
+  console.log("error", result.error);
+  console.log("loading", result.isLoading);
+
+  return result;
 }
 
 export function useRunValidationMutation() {

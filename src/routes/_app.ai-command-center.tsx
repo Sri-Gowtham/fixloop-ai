@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_app/ai-command-center")({
 });
 
 function AICommandCenterPage() {
-  const navigate = useNavigate({ from: "/_app/ai-command-center" });
+  const navigate = useNavigate({ from: "/ai-command-center" });
   const {
     data: clusters = [],
     isLoading: isLoadingClusters,
@@ -85,14 +85,14 @@ function AICommandCenterPage() {
     if (inv && selectedClusterId) {
       const result = await generateRec({ investigationId: inv.id, clusterId: selectedClusterId });
       if (result) {
-        navigate({ to: "/_app/resolution", search: { recId: result.id } });
+        navigate({ to: "/resolution", search: { recId: result.id } });
       }
     }
   };
 
   const handleProceedToResolution = () => {
     if (rec) {
-      navigate({ to: "/_app/resolution", search: { recId: rec.id } });
+      navigate({ to: "/resolution", search: { recId: rec.id } });
     }
   };
 
@@ -208,156 +208,140 @@ function AICommandCenterPage() {
           </div>
         ) : (
           <>
-            {/* A. Investigation Panel */}
-            <Panel
-              title="AI Investigation"
-              subtitle="Live root-cause analysis"
-              action={
-                <div className="flex items-center gap-2 text-[10px] text-mono uppercase tracking-wider text-muted-foreground">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"
-                    style={{ boxShadow: "0 0 6px var(--secondary)" }}
-                  />
-                  Analysis complete
-                </div>
-              }
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <div className="lg:col-span-7 space-y-3">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Detected root cause
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="h-9 w-9 rounded-md flex items-center justify-center shrink-0"
-                      style={{ background: "var(--gradient-cyber)" }}
-                    >
-                      <BrainCircuit className="h-5 w-5 text-primary-foreground" />
+            {/* A. Hero Root Cause Card */}
+            <div className="relative overflow-hidden rounded-xl border border-primary/40 bg-surface/80 p-8 backdrop-blur-xl shadow-2xl">
+              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl opacity-50" />
+              <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-secondary/20 blur-3xl opacity-50" />
+              
+              <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start justify-between">
+                <div className="flex-1 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg flex items-center justify-center border border-primary/50 shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]" style={{ background: "var(--gradient-cyber)" }}>
+                      <BrainCircuit className="h-5 w-5 text-primary-foreground animate-pulse" />
                     </div>
-                    <div className="min-w-0">
-                      <h2 className="text-xl font-bold leading-tight">{inv.root_cause}</h2>
-                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                        <SeverityBadge severity={inv.impact_level as any} />
-                        <span className="text-xs text-muted-foreground text-mono">
-                          Cluster {inv.cluster_id} · {inv.id.split("-")[0]}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-md border border-primary/30 bg-primary/5 p-4 flex items-center gap-4">
-                    <ConfidenceRing value={inv.confidence} />
                     <div>
-                      <div className="text-[10px] uppercase tracking-wider text-primary font-semibold">
-                        Model confidence
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">FixLoop Reasoner Active</div>
+                      <div className="text-sm font-mono text-muted-foreground mt-0.5">ID: {inv.id.split("-")[0]} · CLUSTER: {inv.cluster_id}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-foreground" style={{ textShadow: "0 0 20px rgba(255,255,255,0.1)" }}>
+                      {inv.root_cause}
+                    </h2>
+                    <div className="mt-4 flex items-center gap-3 flex-wrap">
+                      <SeverityBadge severity={inv.impact_level as any} />
+                      <div className="h-1 w-1 rounded-full bg-border" />
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span className="font-mono text-foreground font-semibold">{inv.affected_customers.toLocaleString()}</span> affected
                       </div>
-                      <div className="text-2xl font-bold text-mono">
-                        {inv.confidence.toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        FixLoop Reasoner · cross-source consensus
+                      <div className="h-1 w-1 rounded-full bg-border" />
+                      <div className="flex items-center gap-1.5 text-sm text-critical">
+                        <DollarSign className="h-4 w-4" />
+                        Revenue Risk: <span className="font-mono font-bold">${(inv.revenue_impact_usd / 1000).toFixed(1)}k/mo</span>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="lg:col-span-5 grid grid-cols-2 gap-3">
-                  <StatTile
-                    icon={<Users className="h-4 w-4" />}
-                    label="Affected customers"
-                    value={inv.affected_customers.toLocaleString()}
-                  />
-                  <StatTile
-                    icon={<DollarSign className="h-4 w-4" />}
-                    label="Revenue risk / mo"
-                    value={`$${(inv.revenue_impact_usd / 1000).toFixed(0)}k`}
-                    accent
-                  />
-                  <StatTile
-                    icon={<GitBranch className="h-4 w-4" />}
-                    label="Causal deploy"
-                    value={inv.deploy_correlation?.version || "None"}
-                    mono
-                  />
-                  <StatTile
-                    icon={<Activity className="h-4 w-4" />}
-                    label="Deploy correlation"
-                    value={
-                      inv.deploy_correlation
-                        ? `${Math.round(inv.deploy_correlation.correlation * 100)}%`
-                        : "N/A"
-                    }
-                  />
+
+                <div className="shrink-0 flex flex-col items-center justify-center p-6 rounded-2xl bg-black/40 border border-primary/20 backdrop-blur-md shadow-inner relative group">
+                  <div className="absolute inset-0 bg-primary/5 rounded-2xl transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
+                  <AdvancedConfidenceRing value={inv.confidence} />
+                  <div className="mt-4 text-center relative z-10">
+                    <div className="text-[10px] uppercase tracking-widest text-primary/80 font-semibold">Model Confidence</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Cross-source consensus</div>
+                  </div>
                 </div>
               </div>
-            </Panel>
+              
+              {/* Deploy Correlation Sparkline underneath */}
+              {inv.deploy_correlation && (
+                <div className="relative z-10 mt-8 pt-6 border-t border-border/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <GitBranch className="h-4 w-4 text-secondary" />
+                      <span className="text-xs uppercase tracking-wider font-semibold text-secondary">Causal Deploy Identified: <span className="font-mono text-foreground">{inv.deploy_correlation.version}</span></span>
+                    </div>
+                    <div className="text-xs text-mono bg-secondary/10 text-secondary px-2 py-0.5 rounded border border-secondary/20">
+                      {Math.round(inv.deploy_correlation.correlation * 100)}% Correlation
+                    </div>
+                  </div>
+                  <DeploySparkline />
+                </div>
+              )}
+            </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
               {/* B. Explainability */}
               <Panel
-                className="xl:col-span-3"
                 title="Explainability Engine"
                 subtitle="Why the agent reached this conclusion"
+                className="border-primary/20 bg-surface/40 backdrop-blur-sm"
               >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
                   {/* Reasoning Chain */}
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">
-                      Reasoning Chain
+                    <div className="text-[10px] uppercase tracking-widest text-primary/80 font-bold mb-4 flex items-center gap-2">
+                      <Sparkles className="h-3 w-3" />
+                      Neural Reasoning Pathway
                     </div>
-                    <ol className="space-y-4">
+                    <div className="relative pl-3 border-l border-primary/20 space-y-6">
                       {inv.reasoning_steps.map((r, i) => (
-                        <li key={i} className="flex gap-3 text-sm">
-                          <span className="h-6 w-6 rounded-md bg-primary/10 border border-primary/30 text-primary text-xs font-bold text-mono flex items-center justify-center shrink-0">
-                            {i + 1}
-                          </span>
-                          <span className="text-muted-foreground pt-0.5">
-                            <span className="text-foreground leading-relaxed">{r}</span>
-                          </span>
-                        </li>
+                        <div key={i} className="relative">
+                          <div className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)]" />
+                          <div className="text-sm text-foreground/90 leading-relaxed pl-4">{r}</div>
+                        </div>
                       ))}
-                    </ol>
+                    </div>
                   </div>
 
                   {/* Evidence Trail */}
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">
-                      Evidence trail
+                    <div className="text-[10px] uppercase tracking-widest text-primary/80 font-bold mb-4 flex items-center gap-2">
+                      <Database className="h-3 w-3" />
+                      Forensic Trace
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {inv.evidence.map((e) => {
                         const open = openEvidence === e.id;
                         return (
-                          <div key={e.id} className="rounded-md border border-border bg-surface">
+                          <div key={e.id} className="rounded-lg border border-border/60 bg-surface/50 overflow-hidden transition-all duration-300 hover:border-primary/40">
                             <button
                               onClick={() => setOpenEvidence(open ? null : e.id)}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
+                              className="w-full flex items-center gap-4 px-4 py-3 text-left"
                             >
-                              {open ? (
-                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                              )}
-                              <EvidenceIcon type={e.evidence_type} />
+                              <div className="shrink-0 relative">
+                                {open && <div className="absolute inset-0 bg-primary blur-md opacity-40 rounded-full" />}
+                                <EvidenceIcon type={e.evidence_type} />
+                              </div>
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium truncate">{e.title}</div>
-                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                                <div className="text-sm font-semibold truncate text-foreground/90">{e.title}</div>
+                                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
                                   {e.evidence_type.replace(/_/g, " ")}
                                 </div>
                               </div>
-                              <div className="text-[10px] text-mono text-primary">
-                                w {Math.round(e.weight * 100)}
+                              <div className="shrink-0 text-right">
+                                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Weight</div>
+                                <div className="text-xs font-mono font-bold text-primary">
+                                  {(e.weight * 100).toFixed(0)}%
+                                </div>
                               </div>
                             </button>
                             {open && (
-                              <div className="px-3 pb-3 pt-1 border-t border-border bg-background/40">
-                                <p className="text-sm text-muted-foreground">{e.detail}</p>
-                                <div className="mt-2 h-1 rounded-full bg-accent overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      width: `${e.weight * 100}%`,
-                                      background: "var(--gradient-cyber)",
-                                    }}
-                                  />
+                              <div className="px-4 pb-4 pt-2 border-t border-border/40 bg-black/20">
+                                <p className="text-sm text-muted-foreground leading-relaxed">{e.detail}</p>
+                                <div className="mt-4 flex items-center gap-3">
+                                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Impact Score</div>
+                                  <div className="h-1.5 flex-1 rounded-full bg-accent overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{
+                                        width: `${e.weight * 100}%`,
+                                        background: "var(--gradient-cyber)",
+                                      }}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -368,66 +352,75 @@ function AICommandCenterPage() {
                   </div>
                 </div>
               </Panel>
-            </div>
 
-            {/* D. Fix Validation Simulator (Read-Only mock state if returned by Investigation or static fallback) */}
-            {inv.simulation && (
-              <Panel title="Simulation Forecast" subtitle="Projected outcome if a fix is shipped">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                  <div className="lg:col-span-3">
-                    <CompareCard
-                      label="Before fix"
-                      value={inv.simulation.before_ticket_count}
-                      sub="tickets / cycle"
-                      tone="critical"
-                    />
+              {/* D. Fix Validation Simulator */}
+              {inv.simulation ? (
+                <Panel 
+                  title="Simulation Forecast" 
+                  subtitle="Projected outcome if a fix is shipped"
+                  className="border-secondary/20 bg-surface/40 backdrop-blur-sm"
+                >
+                  <div className="flex flex-col gap-8">
+                    
+                    <div className="rounded-xl border border-secondary/30 bg-secondary/5 p-6 relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] uppercase tracking-widest text-secondary font-bold mb-1">
+                            Predicted Revenue Recovery
+                          </div>
+                          <div className="text-5xl font-extrabold text-mono text-foreground" style={{ textShadow: "0 0 20px rgba(var(--secondary-rgb), 0.3)" }}>
+                            ${inv.simulation.recovered_usd.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-2 font-medium">
+                            per month at current trajectory
+                          </div>
+                        </div>
+                        <div className="h-16 w-16 rounded-full border-2 border-secondary/30 flex items-center justify-center bg-secondary/10">
+                          <TrendingDown className="h-8 w-8 text-secondary" />
+                        </div>
+                      </div>
+                      
+                      <div className="relative z-10 mt-8">
+                        <div className="flex justify-between text-[10px] uppercase tracking-widest font-bold mb-2">
+                          <span className="text-critical">Baseline Loss</span>
+                          <span className="text-secondary">Predicted Recovery</span>
+                        </div>
+                        <div className="h-3 w-full bg-critical/20 rounded-full overflow-hidden flex">
+                          <div className="h-full bg-critical" style={{ width: `${100 - inv.simulation.deflection_pct}%` }} />
+                          <div className="h-full bg-secondary shadow-[0_0_10px_var(--secondary)] relative" style={{ width: `${inv.simulation.deflection_pct}%` }}>
+                            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                      <div className="bg-surface/50 border border-border/50 rounded-xl p-5 text-center">
+                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">Before Fix</div>
+                        <div className="text-3xl font-mono font-bold text-critical">{inv.simulation.before_ticket_count}</div>
+                        <div className="text-xs text-muted-foreground mt-1">tickets / mo</div>
+                      </div>
+                      
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-[10px] uppercase tracking-widest text-secondary font-bold mb-2">Deflection</div>
+                        <div className="flex items-center gap-2 text-2xl font-mono font-bold text-secondary">
+                          <TrendingDown className="h-5 w-5" />
+                          {inv.simulation.deflection_pct}%
+                        </div>
+                      </div>
+
+                      <div className="bg-secondary/10 border border-secondary/30 rounded-xl p-5 text-center shadow-[0_0_15px_rgba(var(--secondary-rgb),0.1)]">
+                        <div className="text-[10px] uppercase tracking-widest text-secondary font-bold mb-2">After Fix</div>
+                        <div className="text-3xl font-mono font-bold text-foreground">{inv.simulation.after_ticket_count}</div>
+                        <div className="text-xs text-secondary mt-1">tickets / mo</div>
+                      </div>
+                    </div>
+
                   </div>
-                  <div className="lg:col-span-2 flex flex-col items-center gap-2">
-                    <ArrowFlow />
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Projected change
-                    </div>
-                    <div className="text-3xl font-bold text-mono text-primary flex items-center gap-1">
-                      <TrendingDown className="h-5 w-5" />
-                      {inv.simulation.deflection_pct}%
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">deflection</div>
-                  </div>
-                  <div className="lg:col-span-3">
-                    <CompareCard
-                      label="After fix"
-                      value={inv.simulation.after_ticket_count}
-                      sub="tickets / cycle"
-                      tone="secondary"
-                    />
-                  </div>
-                  <div className="lg:col-span-4 rounded-md border border-secondary/30 bg-secondary/5 p-4">
-                    <div className="text-[10px] uppercase tracking-wider text-secondary font-semibold">
-                      Revenue recovered
-                    </div>
-                    <div className="mt-1 text-3xl font-bold text-mono">
-                      ${inv.simulation.recovered_usd.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      per month at current trajectory
-                    </div>
-                    <div className="mt-3 h-1.5 rounded-full bg-accent overflow-hidden">
-                      <div
-                        className="h-full"
-                        style={{
-                          width: `${inv.simulation.deflection_pct}%`,
-                          background: "var(--gradient-cyber)",
-                        }}
-                      />
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-mono text-muted-foreground">
-                      <span>baseline</span>
-                      <span>projected</span>
-                    </div>
-                  </div>
-                </div>
-              </Panel>
-            )}
+                </Panel>
+              ) : <div />}
+            </div>
 
             {/* F. Action Area to Route to Resolution Center */}
             <div className="flex items-center justify-end gap-4 pt-4">
@@ -608,109 +601,97 @@ function AIThinkingLoader() {
   );
 }
 
-function StatTile({
-  icon,
-  label,
-  value,
-  accent,
-  mono,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  accent?: boolean;
-  mono?: boolean;
-}) {
+// (Unused components removed during redesign)
+
+function DeploySparkline() {
+  // A visual representation of tickets spiking post-deploy
   return (
-    <div className="rounded-md border border-border bg-surface p-3 flex flex-col justify-between">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-        <span className="text-primary">{icon}</span>
-        {label}
-      </div>
-      <div
-        className={`text-lg font-bold truncate ${accent ? "text-primary" : ""} ${mono ? "text-mono" : ""}`}
-      >
-        {value}
-      </div>
+    <div className="h-12 w-full flex items-end gap-1 relative">
+      <div className="absolute left-1/4 top-0 bottom-0 w-px bg-secondary border-r border-secondary/50 shadow-[0_0_10px_var(--secondary)] z-0" />
+      <div className="absolute left-[24.5%] -top-2 bg-secondary text-black text-[8px] font-bold px-1 rounded z-10">DEPLOY</div>
+      
+      {/* Before Deploy */}
+      {[10, 15, 12, 18, 14, 16, 12].map((h, i) => (
+        <div key={`pre-${i}`} className="flex-1 bg-surface border border-border/50 rounded-t" style={{ height: `${h}%` }} />
+      ))}
+      
+      {/* After Deploy Spike */}
+      {[45, 60, 85, 95, 100, 90, 85, 80, 95, 85, 90, 100].map((h, i) => (
+        <div key={`post-${i}`} className="flex-1 bg-primary/40 border border-primary/60 rounded-t shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" style={{ height: `${h}%` }} />
+      ))}
     </div>
   );
 }
 
-function CompareCard({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: number;
-  sub: string;
-  tone: "critical" | "secondary";
-}) {
-  const color = tone === "critical" ? "var(--critical)" : "var(--secondary)";
+function AdvancedConfidenceRing({ value }: { value: number }) {
+  const rOuter = 46;
+  const rInner = 36;
+  const cOuter = 2 * Math.PI * rOuter;
+  const cInner = 2 * Math.PI * rInner;
+  
+  const offsetOuter = cOuter - (value / 100) * cOuter;
+  // Inner ring spins completely or shows a different metric, here just a decorative dash
+  const offsetInner = cInner * 0.25;
+
   return (
-    <div
-      className="rounded-lg border bg-surface p-4 relative overflow-hidden"
-      style={{ borderColor: `color-mix(in oklab, ${color} 40%, transparent)` }}
-    >
-      <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>
-        {label}
+    <div className="relative flex items-center justify-center">
+      <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl animate-pulse" />
+      <svg width="120" height="120" viewBox="0 0 120 120" className="relative z-10">
+        <defs>
+          <linearGradient id="cyber-gradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="var(--primary)" />
+            <stop offset="100%" stopColor="var(--secondary)" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Outer Ring Background */}
+        <circle cx="60" cy="60" r={rOuter} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+        {/* Inner Ring Background */}
+        <circle cx="60" cy="60" r={rInner} fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="2" strokeDasharray="4 4" />
+
+        {/* Outer Ring Progress */}
+        <circle
+          cx="60"
+          cy="60"
+          r={rOuter}
+          fill="none"
+          stroke="url(#cyber-gradient)"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={cOuter}
+          strokeDashoffset={offsetOuter}
+          transform="rotate(-90 60 60)"
+          filter="url(#glow)"
+        />
+
+        {/* Inner Ring Decorative */}
+        <circle
+          cx="60"
+          cy="60"
+          r={rInner}
+          fill="none"
+          stroke="var(--secondary)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={cInner}
+          strokeDashoffset={offsetInner}
+          transform="rotate(180 60 60)"
+          className="animate-[spin_10s_linear_infinite] origin-center"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <div className="text-2xl font-bold text-mono text-foreground" style={{ textShadow: "0 0 10px rgba(var(--primary-rgb), 0.5)" }}>
+          {value.toFixed(1)}<span className="text-sm text-primary">%</span>
+        </div>
       </div>
-      <div className="mt-1 text-4xl font-bold text-mono">{value.toLocaleString()}</div>
-      <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>
-      <div
-        className="absolute inset-x-0 bottom-0 h-1"
-        style={{ background: color, opacity: 0.7 }}
-      />
     </div>
-  );
-}
-
-function ArrowFlow() {
-  return (
-    <div className="relative h-8 w-24">
-      <div
-        className="absolute inset-y-1/2 left-0 right-3 h-px"
-        style={{ background: "var(--gradient-cyber)" }}
-      />
-      <div
-        className="absolute right-0 top-1/2 -translate-y-1/2 h-0 w-0 border-y-[5px] border-y-transparent border-l-[8px]"
-        style={{ borderLeftColor: "var(--secondary)" }}
-      />
-      <div
-        className="absolute left-2 top-0 h-1.5 w-1.5 rounded-full animate-pulse"
-        style={{ background: "var(--primary)", boxShadow: "0 0 6px var(--primary)" }}
-      />
-    </div>
-  );
-}
-
-function ConfidenceRing({ value }: { value: number }) {
-  const r = 26;
-  const c = 2 * Math.PI * r;
-  const offset = c - (value / 100) * c;
-  return (
-    <svg width="64" height="64" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r={r} fill="none" stroke="var(--accent)" strokeWidth="6" />
-      <circle
-        cx="32"
-        cy="32"
-        r={r}
-        fill="none"
-        stroke="url(#cg)"
-        strokeWidth="6"
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        transform="rotate(-90 32 32)"
-      />
-      <defs>
-        <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="oklch(0.72 0.19 42)" />
-          <stop offset="100%" stopColor="oklch(0.78 0.15 175)" />
-        </linearGradient>
-      </defs>
-    </svg>
   );
 }
 

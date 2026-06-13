@@ -42,7 +42,7 @@ export interface InvestigationOut {
 }
 
 export function useInvestigation(id: string) {
-  return useQuery({
+  const result = useQuery({
     queryKey: queryKeys.investigations.detail(id),
     queryFn: async () => {
       const { data } = await api.get<InvestigationOut>(`/ai/investigate/${id}`);
@@ -50,6 +50,12 @@ export function useInvestigation(id: string) {
     },
     enabled: !!id,
   });
+
+  console.log("data", result.data);
+  console.log("error", result.error);
+  console.log("loading", result.isLoading);
+
+  return result;
 }
 
 export function useInvestigationByCluster(clusterId: string) {
