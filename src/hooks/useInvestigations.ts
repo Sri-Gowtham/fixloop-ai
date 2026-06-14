@@ -51,10 +51,6 @@ export function useInvestigation(id: string) {
     enabled: !!id,
   });
 
-  console.log("data", result.data);
-  console.log("error", result.error);
-  console.log("loading", result.isLoading);
-
   return result;
 }
 
@@ -63,7 +59,6 @@ export function useInvestigationByCluster(clusterId: string) {
     queryKey: queryKeys.investigations.byCluster(clusterId),
     queryFn: async () => {
       const { data } = await api.get<InvestigationOut[]>(`/ai/investigate/cluster/${clusterId}`);
-      // The API returns a list (newest first). We can just return the first one as the active investigation.
       return data[0] || null;
     },
     enabled: !!clusterId,
@@ -90,7 +85,6 @@ export function useRunInvestigationMutation() {
       return data;
     },
     onSuccess: (data, variables) => {
-      // Invalidate cluster-specific and general investigation queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.investigations.byCluster(variables.clusterId),
       });

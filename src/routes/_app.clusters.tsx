@@ -21,15 +21,14 @@ function ClustersPage() {
   const [sev, setSev] = useState<Severity | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {
-    data: liveClusters = [],
-    isLoading: isLoadingClusters,
-    isError: isClustersError,
-  } = useClusters(
+  const clustersResult = useClusters(
     1,
     50,
     sev !== "all" ? sev : undefined,
   );
+  const liveClusters = clustersResult.data || [];
+  const isLoadingClusters = clustersResult.isLoading;
+  const isClustersError = clustersResult.isError;
 
   const filtered = liveClusters.filter((c) => c.title.toLowerCase().includes(q.toLowerCase()));
 

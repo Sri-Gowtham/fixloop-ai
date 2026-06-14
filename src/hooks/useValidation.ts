@@ -27,10 +27,6 @@ export function useValidation(recommendationId?: string) {
     retry: false, // Don't retry if it returns 404 (no validation yet)
   });
 
-  console.log("data", result.data);
-  console.log("error", result.error);
-  console.log("loading", result.isLoading);
-
   return result;
 }
 

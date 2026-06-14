@@ -5,7 +5,6 @@ import axios from "axios";
  * Points to the FastAPI backend (proxied or direct).
  */
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-console.log("BASE_URL", BASE_URL);
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -26,16 +25,7 @@ api.interceptors.request.use((config) => {
 
 // Global response error handler
 api.interceptors.response.use(
-  (response) => {
-    console.log("=== API RESPONSE ===");
-    console.log("BASE_URL:", BASE_URL);
-    console.log("Request URL:", response.config.url);
-    console.log("Response status:", response.status);
-    console.log("Response body:", response.data);
-    console.log("Is Array?", Array.isArray(response.data));
-    console.log("====================");
-    return response;
-  },
+  (response) => response,
   (error) => {
     return Promise.reject(error);
   },

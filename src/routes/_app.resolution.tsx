@@ -41,11 +41,10 @@ export const Route = createFileRoute("/_app/resolution")({
 
 function ResolutionPage() {
   const search = Route.useSearch();
-  const {
-    data: recommendations = [],
-    isLoading: isLoadingRecs,
-    isError: isRecsError,
-  } = useAllRecommendations();
+  const recsResult = useAllRecommendations();
+  const recommendations = recsResult.data || [];
+  const isLoadingRecs = recsResult.isLoading;
+  const isRecsError = recsResult.isError;
 
   const resolved = recommendations.filter((r) => r.status === "resolved");
   const inProgress = recommendations.filter((r) => r.status === "in_progress");
@@ -76,6 +75,15 @@ function ResolutionPage() {
     );
   }
 
+  if (isLoadingRecs) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Loading resolutions...</span>
+      </div>
+    );
+  }
+
   if (!recommendations || recommendations.length === 0) {
     return (
       <div className="p-8 space-y-6 pb-32">
@@ -87,15 +95,6 @@ function ResolutionPage() {
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center text-muted-foreground">
           No recommendations generated yet. Head to the AI Command Center to investigate clusters.
         </div>
-      </div>
-    );
-  }
-
-  if (isLoadingRecs) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="ml-3 text-muted-foreground">Loading resolutions...</span>
       </div>
     );
   }

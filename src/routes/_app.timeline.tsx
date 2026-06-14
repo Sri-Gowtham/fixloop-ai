@@ -13,16 +13,15 @@ export const Route = createFileRoute("/_app/timeline")({
 });
 
 function TimelinePage() {
-  const {
-    data: liveClusters = [],
-    isLoading: isLoadingClusters,
-    isError: isClustersError,
-  } = useClusters(1, 20);
-  const {
-    data: liveDeployments = [],
-    isLoading: isLoadingDeployments,
-    isError: isDeploymentsError,
-  } = useDeployments();
+  const clustersResult = useClusters(1, 20);
+  const deploymentsResult = useDeployments();
+
+  const liveClusters = clustersResult.data || [];
+  const liveDeployments = deploymentsResult.data || [];
+  const isLoadingClusters = clustersResult.isLoading;
+  const isLoadingDeployments = deploymentsResult.isLoading;
+  const isClustersError = clustersResult.isError;
+  const isDeploymentsError = deploymentsResult.isError;
 
   const isLoading = isLoadingClusters || isLoadingDeployments;
   const isError = isClustersError || isDeploymentsError;

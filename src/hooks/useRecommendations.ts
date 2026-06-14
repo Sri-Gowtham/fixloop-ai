@@ -31,19 +31,13 @@ export function useRecommendations(investigationId?: string) {
       const { data } = await api.get<RecommendationOut[]>(
         `/ai/recommend/investigation/${investigationId}`,
       );
-      // The API returns a list. For the Resolution Center, we usually deal with the primary one.
       return data[0] || null;
     },
     enabled: !!investigationId,
   });
 }
 
-import { supabase } from "@/lib/supabase";
-import { useSupabaseSync } from "./useSupabaseSync";
-
 export function useAllRecommendations() {
-  // useSupabaseSync("fix_recommendations", [["recommendations", "all"]]);
-
   return useQuery({
     queryKey: ["recommendations", "all"],
     queryFn: async () => {

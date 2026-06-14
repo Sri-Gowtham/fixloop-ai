@@ -39,14 +39,6 @@ export function useClusters(page = 1, size = 20, severity?: string, status?: str
     },
   });
 
-  console.log("Query Result", {
-    isLoading: result.isLoading,
-    isFetching: result.isFetching,
-    isPending: result.isPending,
-    error: result.error,
-    data: result.data
-  });
-
   return result;
 }
 

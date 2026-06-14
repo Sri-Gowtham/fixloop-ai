@@ -41,16 +41,16 @@ export const Route = createFileRoute("/_app/ai-command-center")({
 
 function AICommandCenterPage() {
   const navigate = useNavigate({ from: "/ai-command-center" });
-  const {
-    data: clusters = [],
-    isLoading: isLoadingClusters,
-    isError: isClustersError,
-  } = useClusters(
+  const clustersResult = useClusters(
     1,
     10,
     undefined,
     "open",
   );
+  const clusters = clustersResult.data || [];
+  const isLoadingClusters = clustersResult.isLoading;
+  const isClustersError = clustersResult.isError;
+
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
 
   // Set first cluster as default if none selected
@@ -113,6 +113,17 @@ function AICommandCenterPage() {
     );
   }
 
+  if (isLoadingClusters) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p>Loading clusters...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!clusters || clusters.length === 0) {
     return (
       <div className="p-8">
@@ -123,17 +134,6 @@ function AICommandCenterPage() {
         />
         <div className="mt-12 text-center text-muted-foreground">
           No open clusters available for investigation.
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoadingClusters) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <p>Loading clusters...</p>
         </div>
       </div>
     );
