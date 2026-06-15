@@ -72,12 +72,12 @@ function SiteHeader() {
           </a>
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <Link to="/dashboard">
+          <Link to="/signin">
             <FxButton variant="ghost" size="sm">
               Sign in
             </FxButton>
           </Link>
-          <Link to="/dashboard">
+          <Link to="/sign-up">
             <FxButton size="sm">
               Launch app <ArrowRight className="h-3.5 w-3.5" />
             </FxButton>

@@ -32,12 +32,12 @@ export function SeverityBadge({ severity, className }: { severity: Severity; cla
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-        s.cls,
+        s?.cls ?? "text-muted-foreground bg-muted/10 border-muted/30",
         className,
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {s.label}
+      {s?.label ?? severity ?? "Unknown"}
     </span>
   );
 }
@@ -48,12 +48,12 @@ export function StatusBadge({ status, className }: { status: Status; className?:
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-        s.cls,
+        s?.cls ?? "text-muted-foreground bg-muted/10 border-muted/30",
         className,
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {s.label}
+      {s?.label ?? status ?? "Unknown"}
     </span>
   );
 }

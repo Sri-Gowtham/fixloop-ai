@@ -25,6 +25,7 @@ from api.recommend import router as recommend_router
 from api.validate import router as validate_router
 from api.stats import router as stats_router
 from api.deployments import router as deployments_router
+from api.copilot import router as copilot_router
 from core.config import settings
 from core.logging import configure_logging
 
@@ -88,6 +89,7 @@ def create_app() -> FastAPI:
     app.include_router(validate_router,   prefix="/ai", tags=["Validate"])
     app.include_router(stats_router,      prefix="/ai/stats", tags=["Stats"])
     app.include_router(deployments_router, prefix="/ai", tags=["Deployments"])
+    app.include_router(copilot_router,     prefix="/ai", tags=["Copilot"])
 
     # ---- Health ----
     @app.get("/health", tags=["Health"], summary="Liveness probe")

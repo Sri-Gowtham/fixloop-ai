@@ -3,7 +3,8 @@ import { useState } from "react";
 import { PageHeader } from "@/components/fixloop/PageHeader";
 import { Panel } from "@/components/fixloop/Panel";
 import { FxButton } from "@/components/fixloop/Button";
-import { integrations, teamMembers, apiKeys, currentUser } from "@/lib/mock-data";
+import { integrations, teamMembers, apiKeys } from "@/lib/mock-data";
+import { useUser } from "@/hooks/useUser";
 import {
   Plug,
   Users,
@@ -35,6 +36,17 @@ const TABS = [
 
 function SettingsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("integrations");
+  const { email, loading } = useUser();
+
+  // Derive workspace info from the authenticated user
+  const emailDomain = (!loading && email !== "No email")
+    ? email.split("@")[1] ?? ""
+    : "";
+  const workspaceName = emailDomain
+    ? emailDomain.split(".")[0]
+    : "My Workspace";
+  const workspaceSlug = workspaceName.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return (
     <div className="p-8 space-y-6">
@@ -68,9 +80,9 @@ function SettingsPage() {
         <div className="lg:col-span-9 space-y-4">
           {tab === "integrations" && <IntegrationsTab />}
           {tab === "team" && <TeamTab />}
-          {tab === "org" && <OrgTab />}
+          {tab === "org" && <OrgTab workspaceName={workspaceName} workspaceSlug={workspaceSlug} emailDomain={emailDomain} timezone={timezone} />}
           {tab === "api" && <ApiTab />}
-          {tab === "notifications" && <NotificationsTab />}
+          {tab === "notifications" && <NotificationsTab email={email} />}
         </div>
       </div>
     </div>
@@ -223,17 +235,27 @@ function TeamTab() {
   );
 }
 
-function OrgTab() {
+function OrgTab({
+  workspaceName,
+  workspaceSlug,
+  emailDomain,
+  timezone,
+}: {
+  workspaceName: string;
+  workspaceSlug: string;
+  emailDomain: string;
+  timezone: string;
+}) {
   return (
     <div className="space-y-4">
       <Panel title="Organization">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Field label="Workspace name" value={currentUser.company} />
-          <Field label="Workspace slug" value="acme-corp" mono />
-          <Field label="Primary domain" value="acmecorp.com" mono />
-          <Field label="Plan" value={`${currentUser.plan} · 25 seats`} />
+          <Field label="Workspace name" value={workspaceName} />
+          <Field label="Workspace slug" value={workspaceSlug} mono />
+          <Field label="Primary domain" value={emailDomain || "—"} mono />
+          <Field label="Plan" value="Free · 1 seat" />
           <Field label="Data region" value="US-East · Virginia" />
-          <Field label="Default timezone" value={currentUser.timezone} mono />
+          <Field label="Default timezone" value={timezone} mono />
         </div>
       </Panel>
       <Panel title="Danger zone">
@@ -301,7 +323,8 @@ function ApiTab() {
   );
 }
 
-function NotificationsTab() {
+function NotificationsTab({ email }: { email: string }) {
+  const digestEmail = email !== "No email" ? email : "your@email.com";
   return (
     <Panel title="Notification routing" subtitle="Workspace-wide defaults">
       <div className="space-y-2">
@@ -312,7 +335,7 @@ function NotificationsTab() {
           },
           { label: "Deploy correlation > 85%", chans: ["Slack #engineering", "In-app"] },
           { label: "Fix verified (loop closed)", chans: ["Email", "Slack #product"] },
-          { label: "Weekly executive digest", chans: ["Email — leads@acmecorp.com"] },
+          { label: "Weekly executive digest", chans: [`Email — ${digestEmail}`] },
         ].map((r) => (
           <div
             key={r.label}

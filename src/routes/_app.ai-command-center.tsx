@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PageHeader } from "@/components/fixloop/PageHeader";
 import { Panel } from "@/components/fixloop/Panel";
 import { FxButton } from "@/components/fixloop/Button";
@@ -74,6 +74,62 @@ function AICommandCenterPage() {
   const [openEvidence, setOpenEvidence] = useState<string | null>(null);
   const [copilotOpen, setCopilotOpen] = useState(true);
   const [query, setQuery] = useState("");
+
+  // ---- Copilot chat state ----
+  type ChatMessage = { role: "user" | "assistant"; content: string };
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      content: "Hi! I'm FixLoop Copilot. Ask me anything about this incident — root cause, deploy correlation, customer impact, revenue, or generate a Jira ticket / postmortem.",
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  const sendMessage = useCallback(async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading || !selectedClusterId) return;
+
+    const next: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: text },
+    ].slice(-20); // keep last 20
+    setMessages(next);
+    setChatInput("");
+    setChatLoading(true);
+
+    try {
+      const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const res = await fetch(`${BASE_URL}/ai/copilot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cluster_id: selectedClusterId, message: text }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || "Unknown error");
+      }
+      const data = await res.json();
+      setMessages((prev) =>
+        [...prev, { role: "assistant", content: data.reply }].slice(-20)
+      );
+    } catch (e: any) {
+      setMessages((prev) =>
+        [
+          ...prev,
+          { role: "assistant", content: `⚠️ Error: ${e.message}` },
+        ].slice(-20)
+      );
+    } finally {
+      setChatLoading(false);
+    }
+  }, [chatInput, chatLoading, selectedClusterId, messages]);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, chatLoading]);
 
   const handleGenerate = () => {
     if (selectedClusterId) {
@@ -454,71 +510,123 @@ function AICommandCenterPage() {
       </div>
 
       {/* E. Floating Copilot */}
-      <div className="fixed bottom-6 right-6 z-30 w-[360px]">
+      <div className="fixed bottom-6 right-6 z-30 w-[380px]">
         {copilotOpen ? (
           <div
-            className="rounded-lg border border-primary/30 bg-card shadow-2xl overflow-hidden"
-            style={{ boxShadow: "var(--shadow-elevated), var(--shadow-glow)" }}
+            className="rounded-xl border border-primary/30 bg-card shadow-2xl overflow-hidden flex flex-col"
+            style={{ boxShadow: "var(--shadow-elevated), var(--shadow-glow)", maxHeight: "520px" }}
           >
+            {/* Header */}
             <div
-              className="flex items-center gap-2 px-4 py-3 border-b border-border"
+              className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0"
               style={{ background: "var(--gradient-cyber)" }}
             >
               <BrainCircuit className="h-4 w-4 text-primary-foreground" />
               <div className="text-sm font-bold text-primary-foreground">FixLoop Copilot</div>
-              <span className="ml-auto text-[10px] text-mono uppercase tracking-wider text-primary-foreground/80">
+              <span className="ml-auto flex items-center gap-1.5 text-[10px] text-mono uppercase tracking-wider text-primary-foreground/80">
+                <span className="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse" />
                 online
               </span>
               <button
                 onClick={() => setCopilotOpen(false)}
-                className="text-primary-foreground/80 hover:text-primary-foreground text-xs"
+                className="text-primary-foreground/80 hover:text-primary-foreground text-xs ml-2"
+                aria-label="Minimize copilot"
               >
                 —
               </button>
             </div>
-            <div className="p-3 max-h-72 overflow-y-auto space-y-2 bg-background/40">
-              <div className="rounded-md bg-surface border border-border p-3 text-sm">
-                <div className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1">
-                  Copilot
-                </div>
-                {inv ? (
-                  <>
-                    Investigating{" "}
-                    <span className="text-mono text-foreground">{inv.cluster_id}</span> — the spike
-                    correlates with deploy{" "}
-                    <span className="text-mono">{inv.deploy_correlation?.version || "None"}</span>{" "}
-                    at{" "}
-                    <span className="text-mono text-primary">
-                      {Math.round((inv.deploy_correlation?.correlation || 0) * 100)}%
-                    </span>
-                    . What should I do next?
-                  </>
-                ) : (
-                  <>I am ready to run an investigation whenever you select a cluster.</>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                {copilotSuggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setQuery(s)}
-                    className="w-full text-left text-xs rounded-md border border-border bg-surface px-2.5 py-1.5 hover:border-primary/40 hover:text-foreground text-muted-foreground"
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-background/60" style={{ minHeight: 0 }}>
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex gap-2 ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {msg.role === "assistant" && (
+                    <div className="h-6 w-6 rounded-full shrink-0 flex items-center justify-center mt-0.5" style={{ background: "var(--gradient-cyber)" }}>
+                      <BrainCircuit className="h-3.5 w-3.5 text-primary-foreground" />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[82%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-primary/20 border border-primary/30 text-foreground rounded-br-sm"
+                        : "bg-surface border border-border text-foreground/90 rounded-bl-sm"
+                    }`}
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                   >
-                    {s}
-                  </button>
-                ))}
-              </div>
+                    {msg.content}
+                  </div>
+                  {msg.role === "user" && (
+                    <div className="h-6 w-6 rounded-full shrink-0 flex items-center justify-center mt-0.5 bg-primary/20 border border-primary/30 text-[10px] font-bold text-primary">
+                      U
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex gap-2 justify-start">
+                  <div className="h-6 w-6 rounded-full shrink-0 flex items-center justify-center" style={{ background: "var(--gradient-cyber)" }}>
+                    <BrainCircuit className="h-3.5 w-3.5 text-primary-foreground" />
+                  </div>
+                  <div className="bg-surface border border-border rounded-xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+                    {[0, 1, 2].map((d) => (
+                      <span
+                        key={d}
+                        className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce"
+                        style={{ animationDelay: `${d * 150}ms` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
             </div>
-            <div className="p-3 border-t border-border flex items-center gap-2">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ask the agent…"
-                className="flex-1 h-9 px-3 rounded-md bg-surface border border-border text-sm outline-none focus:border-primary/50"
-              />
-              <FxButton size="sm" variant="cyber">
-                <Send className="h-3.5 w-3.5" />
-              </FxButton>
+
+            {/* Input */}
+            <div className="border-t border-border p-3 bg-background/80 shrink-0">
+              {!selectedClusterId && (
+                <p className="text-[10px] text-muted-foreground mb-2 text-center">
+                  Select a cluster above to activate Copilot.
+                </p>
+              )}
+              <div className="flex gap-2 items-end">
+                <textarea
+                  id="copilot-input"
+                  rows={2}
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  disabled={!selectedClusterId || chatLoading}
+                  placeholder={selectedClusterId ? "Ask about root cause, impact, Jira ticket…" : "Select a cluster first"}
+                  className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-xs placeholder:text-muted-foreground outline-none focus:border-primary/60 transition-colors disabled:opacity-50"
+                />
+                <button
+                  id="copilot-send"
+                  onClick={sendMessage}
+                  disabled={!chatInput.trim() || !selectedClusterId || chatLoading}
+                  className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-all disabled:opacity-40 hover:opacity-80"
+                  style={{ background: "var(--gradient-cyber)" }}
+                  aria-label="Send message"
+                >
+                  {chatLoading ? (
+                    <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 text-primary-foreground" />
+                  )}
+                </button>
+              </div>
+              <p className="text-[9px] text-muted-foreground mt-1.5 text-center">
+                Powered by Groq · Incident-scoped only · Enter to send
+              </p>
             </div>
           </div>
         ) : (

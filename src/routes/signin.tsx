@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { AuthLayout, AuthInput, SsoButton } from "@/components/fixloop/AuthLayout";
+import { useState } from "react";
+import { AuthLayout, SsoButton } from "@/components/fixloop/AuthLayout";
 import { FxButton } from "@/components/fixloop/Button";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/signin")({
   head: () => ({ meta: [{ title: "Sign in · FixLoop AI" }] }),
@@ -9,6 +11,31 @@ export const Route = createFileRoute("/signin")({
 
 function SignInPage() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      setError(authError.message);
+      return;
+    }
+
+    navigate({ to: "/dashboard" });
+  }
+
   return (
     <AuthLayout
       eyebrow="Welcome back"
@@ -23,13 +50,7 @@ function SignInPage() {
         </>
       }
     >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          navigate({ to: "/dashboard" });
-        }}
-        className="space-y-4"
-      >
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-2">
           <SsoButton provider="google">Continue with Google</SsoButton>
           <SsoButton provider="microsoft">Continue with Microsoft</SsoButton>
@@ -39,28 +60,59 @@ function SignInPage() {
           or
           <div className="h-px flex-1 bg-border" />
         </div>
-        <AuthInput
-          label="Work email"
-          type="email"
-          placeholder="you@company.com"
-          autoComplete="email"
-        />
-        <div>
-          <AuthInput
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
+
+        {error && (
+          <div className="rounded-md border border-critical/40 bg-critical/10 px-3 py-2.5 text-sm text-critical">
+            {error}
+          </div>
+        )}
+
+        <label className="block">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+            Work email
+          </div>
+          <input
+            type="email"
+            placeholder="you@company.com"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full h-11 rounded-md border border-border bg-surface px-3 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
           />
+        </label>
+
+        <div>
+          <label className="block">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+              Password
+            </div>
+            <input
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full h-11 rounded-md border border-border bg-surface px-3 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
           <div className="mt-2 text-right">
             <Link to="/forgot-password" className="text-xs text-primary hover:underline">
               Forgot password?
             </Link>
           </div>
         </div>
-        <FxButton size="lg" variant="cyber" className="w-full">
-          Sign in
+
+        <FxButton
+          size="lg"
+          variant="cyber"
+          className="w-full"
+          disabled={loading}
+        >
+          {loading ? "Signing in…" : "Sign in"}
         </FxButton>
+
         <div className="text-[10px] text-mono uppercase tracking-wider text-muted-foreground text-center pt-1">
           Protected by SSO · MFA · SOC 2 Type II
         </div>
