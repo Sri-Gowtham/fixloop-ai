@@ -21,28 +21,6 @@ Existing solutions like Zendesk or Jira focus purely on *workflow management*. T
 
 ---
 
-## 🏛️ Architecture Diagram
-
-```mermaid
-graph TD
-    subgraph Ingestion Layer
-        T[Raw Support Tickets] --> |JSON/Webhook| I[FastAPI Ingest Endpoint]
-    end
-
-    subgraph AI Pipeline
-        I -->|Text| V[pgvector Embeddings]
-        V -->|Semantic Match| C[Clustering Engine]
-        C -->|Ticket Batch| Inv[Investigation Agent]
-        Inv -->|Cross-Reference| D[(Deployments DB)]
-        Inv -->|Root Cause Analysis| R[Recommendation Agent]
-    end
-
-    subgraph Closing the Loop
-        R -->|Jira Acceptance Criteria| F[Fix Generation]
-        F -->|Post-Deploy Polling| Val[Validation Engine]
-        Val -->|Deflection %| M[Revenue Recovered Metrics]
-    end
-```
 
 ---
 
